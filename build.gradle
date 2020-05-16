@@ -9,6 +9,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'io.quarkus:quarkus-kafka-streams'
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
 
     testImplementation 'io.quarkus:quarkus-junit5'
