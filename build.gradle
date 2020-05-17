@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'io.quarkus'
+    id 'application'
 }
 
 repositories {
@@ -9,18 +9,21 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.quarkus:quarkus-kafka-streams'
-    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '2.5.0'
+    implementation group: 'com.typesafe', name: 'config', version: '1.4.0'
 
-    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.6.2'
 }
 
 group 'com.rhysmccaig.kschedule'
 version '1.0.0-SNAPSHOT'
 
+application {
+    mainClassName = 'com.rhysmccaig.kschedule.KSchedule'
+}
+
 compileJava {
     options.encoding = 'UTF-8'
-    options.compilerArgs << '-parameters'
 }
 
 compileTestJava {
@@ -33,5 +36,4 @@ java {
 }
 
 test {
-    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }
