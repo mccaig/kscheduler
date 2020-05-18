@@ -18,6 +18,10 @@ public abstract class SchedulerStrategy {
     this.deadLetterTopic = deadLetterTopic;
   }
 
+  public String getDeadLetterTopic() {
+    return deadLetterTopic;
+  }
+
   public abstract String next(Instant scheduled, Instant expires, String targetTopic);
 
 }

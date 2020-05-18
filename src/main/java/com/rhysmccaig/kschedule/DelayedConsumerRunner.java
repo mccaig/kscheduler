@@ -14,6 +14,7 @@ import com.rhysmccaig.kschedule.strategy.SchedulerStrategy;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,10 +53,17 @@ public class DelayedConsumerRunner implements Runnable {
       // If the delay is negtive, then the high water mark is in the future
       var highWaterMark = config.getDelay().isNegative() ? Instant.MAX : Instant.now().minus(config.getDelay());
       for (ConsumerRecord<byte[], byte[]> record : records) {
-        var kscheduleHeaders = ScheduledMessageHeaders.fromHeaders(record.headers());
-        logger.debug(record);
-        logger.info(headers);
-        // If the record timestamp is before
+        var kScheduleHeaders = ScheduledMessageHeaders.fromHeaders(record.headers());
+        // If the headers cant be used, send the message to DLQ and commit the message
+        if (kScheduleHeaders.getScheduled() == null || kScheduleHeaders.getTarget() == null) {
+          logger.debug("Got message from topic {}, partition {}, offset {} that was missing kschedule headers", record.topic(), record.partition(), record.offset());
+          if (strategy.getDeadLetterTopic() != null) {
+            producer.send(new ProducerRecord<byte[],byte[]>(strategy.getDeadLetterTopic(), null, null, record.key(), record.value(), record.headers()));
+          }
+        } else {
+          // Other logic
+          // If record is after high watermark, pause partition, schedule unpause, seek partition for next poll
+        }
       }
     }
   }
