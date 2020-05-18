@@ -49,20 +49,26 @@ public class DelayedConsumerRunner implements Runnable {
     while (running) {
       // Get records
       var records = consumer.poll(CONSUMER_POLL_DURATION);
-      // We only want to process records that were added to the topic earlier than the delay
-      // If the delay is negtive, then the high water mark is in the future
-      var highWaterMark = config.getDelay().isNegative() ? Instant.MAX : Instant.now().minus(config.getDelay());
+      List<Integer> pausedPartitions = List.of();
       for (ConsumerRecord<byte[], byte[]> record : records) {
         var kScheduleHeaders = ScheduledMessageHeaders.fromHeaders(record.headers());
-        // If the headers cant be used, send the message to DLQ and commit the message
-        if (kScheduleHeaders.getScheduled() == null || kScheduleHeaders.getTarget() == null) {
+        if (pausedPartitions.contains(record.partition())) {
+            // If this records partition is already paused in this batch, drop it - we will pick up later
+          if (logger.isTraceEnabled()) {
+            logger.trace("Skipping record in topic {} as its partition {} is already paused", record.topic(), record.partition());
+          }
+        } else if (kScheduleHeaders.getProduced() == null || kScheduleHeaders.getScheduled() == null || kScheduleHeaders.getTarget() == null) {
+          // If the headers cant be used, send the message to DLQ and commit the message
           logger.debug("Got message from topic {}, partition {}, offset {} that was missing kschedule headers", record.topic(), record.partition(), record.offset());
           if (strategy.getDeadLetterTopic() != null) {
             producer.send(new ProducerRecord<byte[],byte[]>(strategy.getDeadLetterTopic(), null, null, record.key(), record.value(), record.headers()));
           }
+        } else if (kScheduleHeaders.getProduced().plus(config.getDelay()).isAfter(Instant.now())) {
+            // We only want to process records that were added to the topic earlier than the delay
+            // If record is after high watermark, pause partition, schedule unpause, seek partition for next poll
+            // this topic partition needs to be paused - figure out for how long and seek accordingly
         } else {
-          // Other logic
-          // If record is after high watermark, pause partition, schedule unpause, seek partition for next poll
+          // Lets process that message
         }
       }
     }

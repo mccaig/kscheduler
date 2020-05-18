@@ -15,15 +15,18 @@ public class ScheduledMessageHeaders {
   public static String KSCHEDULE_HEADER_SCHEDULED = String.join(KSCHEDULE_HEADER_DELIMITER, KSCHEDULE_HEADER_PREFIX, "scheduled");
   public static String KSCHEDULE_HEADER_EXPIRES = String.join(KSCHEDULE_HEADER_DELIMITER, KSCHEDULE_HEADER_PREFIX, "expires");
   public static String KSCHEDULE_HEADER_TARGET = String.join(KSCHEDULE_HEADER_DELIMITER, KSCHEDULE_HEADER_PREFIX, "target");
-  
+  public static String KSCHEDULE_HEADER_PRODUCED = String.join(KSCHEDULE_HEADER_DELIMITER, KSCHEDULE_HEADER_PREFIX, "produced");
+
   private Instant scheduled;
   private Instant expires;
   private String target;
+  private Instant produced; // When the record was last produced into a topic. Is it better to force this or rely on broker time?
 
-  public ScheduledMessageHeaders(Instant scheduled, Instant expires, String target) {
+  public ScheduledMessageHeaders(Instant scheduled, Instant expires, String target, Instant produced) {
     this.scheduled = scheduled;
     this.expires = expires;
     this.target = target;
+    this.produced = produced;
   }
 
   public Instant getScheduled() {
@@ -50,6 +53,15 @@ public class ScheduledMessageHeaders {
     this.target = target;
   }
 
+  public Instant getProduced() {
+    return produced;
+  }
+
+  public void setProduced(Instant produced) {
+    this.produced = produced;
+  }
+
+  // String encoding of instants is nice and readable, but maybe hurts performance too much
   public Iterable<Header> toHeaders() {
     List<Header> list = List.of();
     if (scheduled != null) {
@@ -61,9 +73,13 @@ public class ScheduledMessageHeaders {
     if (target != null) {
       list.add(new RecordHeader(KSCHEDULE_HEADER_TARGET, target.getBytes(StandardCharsets.UTF_8)));
     }
+    if (produced != null) {
+      list.add(new RecordHeader(KSCHEDULE_HEADER_PRODUCED, produced.toString().getBytes(StandardCharsets.UTF_8)));
+    }
     return list;
   }
 
+  // 
   public static ScheduledMessageHeaders fromHeaders(Headers headers) {
     var scheduledHeader = headers.lastHeader(KSCHEDULE_HEADER_SCHEDULED);
     var scheduled = (scheduledHeader == null) ? null : Instant.parse(new String(scheduledHeader.value(), StandardCharsets.UTF_8));
@@ -71,7 +87,9 @@ public class ScheduledMessageHeaders {
     var expires = (expiresHeader == null) ? null : Instant.parse(new String(expiresHeader.value(), StandardCharsets.UTF_8));
     var targetHeader = headers.lastHeader(KSCHEDULE_HEADER_TARGET);
     var target = (targetHeader == null) ? null : new String(targetHeader.value(), StandardCharsets.UTF_8);
-    return new ScheduledMessageHeaders(scheduled, expires, target);
+    var producedHeader = headers.lastHeader(KSCHEDULE_HEADER_PRODUCED);
+    var produced = (producedHeader == null) ? null : Instant.parse(new String(producedHeader.value(), StandardCharsets.UTF_8));
+    return new ScheduledMessageHeaders(scheduled, expires, target, produced);
   }
 
 }
