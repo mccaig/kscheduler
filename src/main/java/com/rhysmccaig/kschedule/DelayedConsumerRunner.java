@@ -9,12 +9,10 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
 import com.rhysmccaig.kschedule.model.ScheduledMessageHeaders;
-import com.rhysmccaig.kschedule.strategy.SchedulerStrategy;
+import com.rhysmccaig.kschedule.router.Router;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,21 +23,19 @@ public class DelayedConsumerRunner implements Runnable {
   private static final Duration CONSUMER_POLL_DURATION = Duration.ofMillis(100);
 
   private final DelayedTopicConfig config;
-  private final KafkaProducer<byte[], byte[]> producer;
   private final KafkaConsumer<byte[], byte[]> consumer;
-  private final SchedulerStrategy strategy;
+  private final Router router;
   private final ScheduledExecutorService waitScheduler;
   private Boolean running = false;
 
-  public DelayedConsumerRunner(Properties consumerProps, DelayedTopicConfig config, SchedulerStrategy strategy, KafkaProducer<byte[], byte[]> producer) {
+  public DelayedConsumerRunner(Properties consumerProps, DelayedTopicConfig config, Router router) {
     // We NEVER want to auto commit offsets
     consumerProps.setProperty("enable.auto.commit", "false");
     this.consumer = new KafkaConsumer<>(consumerProps);
     this.config = config;
-    this.strategy = strategy;
-    this.producer = producer;
+    this.router = router;
     this.waitScheduler = Executors.newScheduledThreadPool(1);
-    logger.debug("Initialized with DelayedTopicConfig={}, Strategy={}", config, strategy);
+    logger.debug("Initialized with DelayedTopicConfig={}, Router={}", config, router);
   }
 
   public void run() {
@@ -55,14 +51,22 @@ public class DelayedConsumerRunner implements Runnable {
         if (pausedPartitions.contains(record.partition())) {
             // If this records partition is already paused in this batch, drop it - we will pick up later
           if (logger.isTraceEnabled()) {
-            logger.trace("Skipping record in topic {} as its partition {} is already paused", record.topic(), record.partition());
+            logger.trace("Skipping record from topic {}, partition {}, offset {}, as the partition is paused", record.topic(), record.partition(), record.offset());
           }
         } else if (kScheduleHeaders.getProduced() == null || kScheduleHeaders.getScheduled() == null || kScheduleHeaders.getTarget() == null) {
           // If the headers cant be used, send the message to DLQ and commit the message
           logger.debug("Got message from topic {}, partition {}, offset {} that was missing kschedule headers", record.topic(), record.partition(), record.offset());
-          if (strategy.getDeadLetterTopic() != null) {
-            producer.send(new ProducerRecord<byte[],byte[]>(strategy.getDeadLetterTopic(), null, null, record.key(), record.value(), record.headers()));
-          }
+          kScheduleHeaders.setError(new StringBuilder(128)
+              .append("Missing headers in record received from ")
+              .append(record.topic())
+              .append(":")
+              .append(record.topic())
+              .append(":")
+              .append(record.topic())
+              .toString());
+          var result = router.routeDeadLetter(record.key(), record.value(), kScheduleHeaders.merge(record.headers()));
+          // Need to consume future to determine whether to commit?
+          consumer.commitAsync(offsets, callback);
         } else if (kScheduleHeaders.getProduced().plus(config.getDelay()).isAfter(Instant.now())) {
             // We only want to process records that were added to the topic earlier than the delay
             // If record is after high watermark, pause partition, schedule unpause, seek partition for next poll

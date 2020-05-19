@@ -14,9 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
-import com.rhysmccaig.kschedule.strategy.NotAfterStrategy;
-import com.rhysmccaig.kschedule.strategy.NotBeforeStrategy;
-import com.rhysmccaig.kschedule.strategy.SchedulerStrategy;
+import com.rhysmccaig.kschedule.router.Router;
+import com.rhysmccaig.kschedule.router.RouterStrategy;
+import com.rhysmccaig.kschedule.router.Strategy;
 import com.rhysmccaig.kschedule.util.ConfigUtils;
 import com.typesafe.config.Config;
 
@@ -47,23 +47,15 @@ public class KSchedule {
     // Set up the producer
     var producer = new KafkaProducer<byte[],byte[]>(producerConfig);
 
+
+    // Set up a topic router
+    final RouterStrategy defaultRouterStrategy = Strategy.valueOf(conf.getString("scheduler.router.strategy"));
+    final Router topicRouter = new Router(delayedTopics, dlqTopic, defaultRouterStrategy, producer);
+
     // Set up a consumer for each input/delayed topic 
     // One thread per input topic
-    final SchedulerStrategy strategy;
-    switch (conf.getString("scheduler.strategy")) {
-      case "not_before":
-        strategy = new NotBeforeStrategy(delayedTopics, dlqTopic);
-        break;
-      case "not_after":
-        strategy = new NotAfterStrategy(delayedTopics, dlqTopic);
-        break;
-      case "exact":
-        throw new Error("exact strategy not implemented");
-      default:
-        throw new Error("Unsupported scheduler.strategy");
-    }
     Executor consumerExecutor = Executors.newFixedThreadPool(delayedTopics.size());
-    delayedTopics.stream().forEach(dt -> consumerExecutor.execute(new DelayedConsumerRunner(consumerConfig, dt, strategy, producer)));
+    delayedTopics.stream().forEach(delayedTopic -> consumerExecutor.execute(new DelayedConsumerRunner(consumerConfig, delayedTopic, topicRouter)));
     
 
     // Need a shutdown hook to clean up the producer and running consumers
