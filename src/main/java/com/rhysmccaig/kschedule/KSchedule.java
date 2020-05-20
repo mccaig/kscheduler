@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -47,15 +47,17 @@ public class KSchedule {
     // Set up the producer
     var producer = new KafkaProducer<byte[],byte[]>(producerConfig);
 
-
     // Set up a topic router
     final RoutingStrategy defaultRouterStrategy = Strategy.valueOf(conf.getString("scheduler.router.strategy"));
     final Router topicRouter = new Router(delayedTopics, dlqTopic, defaultRouterStrategy, producer);
-
     // Set up a consumer for each input/delayed topic 
-    // One thread per input topic
-    Executor consumerExecutor = Executors.newFixedThreadPool(delayedTopics.size());
-    delayedTopics.stream().forEach(delayedTopic -> consumerExecutor.execute(new DelayedConsumerRunner(consumerConfig, delayedTopic, topicRouter)));
+    // One consumer thread per input topic for now
+    ExecutorService consumerExecutor = Executors.newFixedThreadPool(delayedTopics.size());
+    var consumers = delayedTopics.stream()
+        .map(delayedTopic -> new DelayedConsumerRunner(consumerConfig, delayedTopic, topicRouter))
+        .collect(Collectors.toList());
+    
+    var threads = consumerExecutor.invokeAll(consumers);
     
 
     // Need a shutdown hook to clean up the producer and running consumers
