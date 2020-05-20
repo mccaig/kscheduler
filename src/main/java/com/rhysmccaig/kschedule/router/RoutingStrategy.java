@@ -5,7 +5,7 @@ import java.util.SortedSet;
 
 import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
 
-public interface RouterStrategy {
+public interface RoutingStrategy {
   /**
    * 
    * @param delayedTopics Must include at least one topic with a non negative delay. Behaviour is not defined if this is not the case.
@@ -17,4 +17,6 @@ public interface RouterStrategy {
   public String getNextTopic(SortedSet<DelayedTopicConfig> delayedTopics, Instant currentTime, Instant scheduled, String targetTopic);
 
 }
+
+
 

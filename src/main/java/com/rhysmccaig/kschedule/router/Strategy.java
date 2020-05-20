@@ -11,7 +11,7 @@ import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
  *  <li>{@link #NOT_BEFORE}</li>
  *  <li>{@link #NOT_AFTER}</li>
  */
-public enum Strategy implements RouterStrategy {
+public enum Strategy implements RoutingStrategy {
     /**
     * NOT_BEFORE Strategy
     * <br><br>

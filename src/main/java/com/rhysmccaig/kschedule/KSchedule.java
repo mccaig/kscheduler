@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
 import com.rhysmccaig.kschedule.router.Router;
-import com.rhysmccaig.kschedule.router.RouterStrategy;
+import com.rhysmccaig.kschedule.router.RoutingStrategy;
 import com.rhysmccaig.kschedule.router.Strategy;
 import com.rhysmccaig.kschedule.util.ConfigUtils;
 import com.typesafe.config.Config;
@@ -49,7 +49,7 @@ public class KSchedule {
 
 
     // Set up a topic router
-    final RouterStrategy defaultRouterStrategy = Strategy.valueOf(conf.getString("scheduler.router.strategy"));
+    final RoutingStrategy defaultRouterStrategy = Strategy.valueOf(conf.getString("scheduler.router.strategy"));
     final Router topicRouter = new Router(delayedTopics, dlqTopic, defaultRouterStrategy, producer);
 
     // Set up a consumer for each input/delayed topic 
