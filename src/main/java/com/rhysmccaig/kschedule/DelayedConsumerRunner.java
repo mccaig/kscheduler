@@ -44,13 +44,11 @@ public class DelayedConsumerRunner implements Callable<Void> {
   }
 
   public Void call() {
-    final Map<TopicPartition, Instant> paused = new HashMap<>();
-    final Map<TopicPartition, Map<Long, Future<RecordMetadata>>> awaitingCommit = new HashMap<>();
     try{
-      // Rebalance listener shouldnt be required as we gracefully handle failure of pause() 
-      // and resume() due to unassigned partitions?
+      final Map<TopicPartition, Instant> paused = new HashMap<>();
+      final Map<TopicPartition, Map<Long, Future<RecordMetadata>>> awaitingCommit = new HashMap<>();
+      // TODO: Add a rebalance listener to remove the paused partitions we are losing assignment to
       consumer.subscribe(List.of(config.getTopic()));
-      // TODO: Add logic to gracefully shutdown
       while (!closed.get()) {
         // Get and process records
         var records = consumer.poll(CONSUMER_POLL_DURATION);
@@ -66,11 +64,11 @@ public class DelayedConsumerRunner implements Callable<Void> {
             if (kScheduleHeaders.getProduced() != null && kScheduleHeaders.getProduced().plus(config.getDelay()).isAfter(Instant.now())) {
             // The topic delay hasnt yet elapsed for this event, we need to pause this partition, and rewind
             try {
-              consumer.pause(List.of(partition));
               paused.put(partition, kScheduleHeaders.getProduced().plus(config.getDelay()));
+              consumer.pause(List.of(partition));
               consumer.seek(partition, record.offset());
             } catch (IllegalStateException ex) {
-              // TODO:
+              paused.remove(partition);
               logger.warn("Attempted to pause/seek an unassigned partition: ", partition);
             }
             } else { // Otherwise we can attempt to route this message
@@ -106,9 +104,9 @@ public class DelayedConsumerRunner implements Callable<Void> {
           }
         }
       }
-    } catch (WakeupException e) {
+    } catch (WakeupException ex) {
         // Ignore exception if closing
-        if (!closed.get()) throw e;
+        if (!closed.get()) throw ex;
     } finally {
       consumer.close();
     }
