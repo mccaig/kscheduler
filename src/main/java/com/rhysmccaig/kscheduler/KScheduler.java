@@ -33,9 +33,12 @@ public class KScheduler {
   public static final Duration PRODUCER_SHUTDOWN_TIMEOUT_MS = Duration.ofMillis(30000);
 
   public static void main(String[] args) {
-    Config config = ConfigFactory.load();
-    Config scheduleConfig = config.getConfig("scheduler");
-    Integer consumerThreads = scheduleConfig.getInt("consumer.threads");
+    final Config config = ConfigFactory.load();
+    final Config scheduleConfig = config.getConfig("scheduler");
+    final Integer consumerThreads = scheduleConfig.getInt("consumer.threads");
+    final Duration consumerShutdownTimeout = scheduleConfig.getDuration("consumer.shutdown.timeout");
+    final Duration producerShutdownTimeout = scheduleConfig.getDuration("producer.shutdown.timeout");
+
 
     Properties producerProps = ConfigUtils.toProperties(
         config.getConfig("kafka").withFallback(config.getConfig("kafka.producer")));
@@ -70,11 +73,11 @@ public class KScheduler {
       consumerRunners.add(new DelayedConsumerRunner(consumerProps, topics, topicRouter));
     }
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
+    // TODO: Add shutdown hook to shutdown() consumer, and awaitTermination() of consumerExecutorService and shutdown producer
     final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
     // Run each consumer runner
     consumerRunners.stream()
-        .map(consumer -> consumerEcs.submit(consumer))
-        .collect(Collectors.toList());
+        .forEach(consumer -> consumerEcs.submit(consumer));
     
     // Under ideal operating conditions, consumer threads should never return.
     // If the thread was interrupted, then it will shut down cleanly, returing null
@@ -92,14 +95,14 @@ public class KScheduler {
     }
     consumerExecutorService.shutdown();
     try {
-      if (!consumerExecutorService.awaitTermination(CONSUMER_SHUTDOWN_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+      if (!consumerExecutorService.awaitTermination(consumerShutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
         consumerExecutorService.shutdownNow();
       }
     } catch (InterruptedException ex) {
       // Well.. we tried
       logger.error("Timeout while waiting for consumer threads to terminate.", ex);
     }
-    producer.close(PRODUCER_SHUTDOWN_TIMEOUT_MS);
+    producer.close(producerShutdownTimeout);
 
   }
 
