@@ -1,4 +1,4 @@
-package com.rhysmccaig.kschedule.model;
+package com.rhysmccaig.kscheduler.model;
 
 import java.time.Duration;
 

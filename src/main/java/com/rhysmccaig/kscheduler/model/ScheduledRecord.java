@@ -1,10 +1,10 @@
-package com.rhysmccaig.kschedule.model;
+package com.rhysmccaig.kscheduler.model;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 
-import com.rhysmccaig.kschedule.router.Strategy;
+import com.rhysmccaig.kscheduler.router.Strategy;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;

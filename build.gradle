@@ -19,11 +19,11 @@ dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.6.2'
 }
 
-group 'com.rhysmccaig.kschedule'
+group 'com.rhysmccaig.kscheduler'
 version '1.0.0-SNAPSHOT'
 
 application {
-    mainClassName = 'com.rhysmccaig.kschedule.KSchedule'
+    mainClassName = 'com.rhysmccaig.kscheduler.KScheduler'
 }
 
 compileJava {

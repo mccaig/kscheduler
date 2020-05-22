@@ -1,4 +1,4 @@
-# kschedule
+# KScheduler
 Kafka-based "task" scheduler
 
 ## Overview

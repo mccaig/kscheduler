@@ -7,4 +7,4 @@ pluginManagement {
     plugins {
     }
 }
-rootProject.name='kschedule'
+rootProject.name='kscheduler'

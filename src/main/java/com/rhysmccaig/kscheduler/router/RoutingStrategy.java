@@ -1,9 +1,9 @@
-package com.rhysmccaig.kschedule.router;
+package com.rhysmccaig.kscheduler.router;
 
 import java.time.Instant;
 import java.util.SortedSet;
 
-import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
+import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 
 public interface RoutingStrategy {
   /**

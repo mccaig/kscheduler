@@ -9,7 +9,7 @@
         <Root level="INFO">
             <AppenderRef ref="ConsoleJSONAppender" />
         </Root>
-        <Logger name="com.rhysmccaig.kschedule" level="DEBUG"/>
+        <Logger name="com.rhysmccaig.kscheduler" level="DEBUG"/>
         <Logger name="org.apache.kafka" level="WARN"/>
         <Logger name="org.apache.kafka.clients.NetworkClient" level="ERROR"/>
     </Loggers>

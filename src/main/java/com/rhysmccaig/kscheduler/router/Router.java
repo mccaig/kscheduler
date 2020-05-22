@@ -1,4 +1,4 @@
-package com.rhysmccaig.kschedule.router;
+package com.rhysmccaig.kscheduler.router;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -10,8 +10,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
-import com.rhysmccaig.kschedule.model.ScheduledRecord;
+import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
+import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -19,6 +19,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+// TODO: Validate thread-safety of this class
 public class Router {
   static final Logger logger = LogManager.getLogger(Router.class); 
 

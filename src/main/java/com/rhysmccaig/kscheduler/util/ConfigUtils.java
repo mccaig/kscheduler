@@ -1,4 +1,4 @@
-package com.rhysmccaig.kschedule.util;
+package com.rhysmccaig.kscheduler.util;
 
 import java.util.Properties;
 import com.typesafe.config.Config;

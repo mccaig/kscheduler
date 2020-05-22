@@ -1,10 +1,10 @@
-package com.rhysmccaig.kschedule.router;
+package com.rhysmccaig.kscheduler.router;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.SortedSet;
 
-import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
+import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 
 /**
  *  Topic Routing strategies that can be used

@@ -1,4 +1,4 @@
-package com.rhysmccaig.kschedule;
+package com.rhysmccaig.kscheduler;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -13,9 +13,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import com.rhysmccaig.kschedule.model.DelayedTopicConfig;
-import com.rhysmccaig.kschedule.model.ScheduledRecord;
-import com.rhysmccaig.kschedule.router.Router;
+import com.rhysmccaig.kscheduler.model.ScheduledRecord;
+import com.rhysmccaig.kscheduler.router.Router;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -33,18 +32,18 @@ public class DelayedConsumerRunner implements Callable<Void> {
   
   private static final Duration CONSUMER_POLL_DURATION = Duration.ofMillis(100);
 
-  private final DelayedTopicConfig config;
+  private final List<String> topics;
   private final KafkaConsumer<byte[], byte[]> consumer;
   private final Router router;
   private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
-  public DelayedConsumerRunner(Properties consumerProps, DelayedTopicConfig config, Router router) {
+  public DelayedConsumerRunner(Properties consumerProps, List<String> topics, Router router) {
     // We NEVER want to auto commit offsets
     consumerProps.setProperty("enable.auto.commit", "false");
     this.consumer = new KafkaConsumer<>(consumerProps);
-    this.config = config;
+    this.topics = topics;
     this.router = router;
-    logger.debug("Initialized with DelayedTopicConfig={}, Router={}", config, router);
+    logger.debug("Initialized with topics={}, router={}", topics, router);
   }
 
 
@@ -53,8 +52,7 @@ public class DelayedConsumerRunner implements Callable<Void> {
     try{
       final Map<TopicPartition, Instant> paused = new HashMap<>();
       final Map<TopicPartition, List<Entry<Long, Future<RecordMetadata>>>> awaitingCommit = new HashMap<>();
-      // TODO: Add a rebalance listener to remove the paused partitions we are losing assignment to
-      consumer.subscribe(List.of(config.getTopic()));
+      consumer.subscribe(topics);
       while (!shutdown.get()) {
         // Get and process records
         var consumerRecords = consumer.poll(CONSUMER_POLL_DURATION);
