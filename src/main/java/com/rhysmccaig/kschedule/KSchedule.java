@@ -3,6 +3,7 @@ package com.rhysmccaig.kschedule;
 import com.typesafe.config.ConfigFactory;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,8 +31,8 @@ public class KSchedule {
   static final Logger logger = LogManager.getLogger(KSchedule.class); 
 
   // TODO: Move the shutdown timeouts into config
-  public static final Integer CONSUMER_SHUTDOWN_TIMEOUT_MS = 15000;
-  public static final Duration PRODUCER_SHUTDOWN_TIMEOUT_MS = Duration.ofMillis(15000);
+  public static final Integer CONSUMER_SHUTDOWN_TIMEOUT_MS = 30000;
+  public static final Duration PRODUCER_SHUTDOWN_TIMEOUT_MS = Duration.ofMillis(30000);
 
 
   public static void main(String[] args) {
@@ -72,19 +73,14 @@ public class KSchedule {
     
     // Under ideal operating conditions, consumer threads should never return.
     // If the thread was interrupted, then it will shut down cleanly, returing null
-    // In exceptional circumstances, the thread may throw an exception
+    // In truly exceptional circumstances, the thread may throw an exception
     // In either case we should interrupt the remaining threads and shutdown the app.
     try {
       consumerEcs.take().get();
-    } catch (CancellationException 
-        | ExecutionException 
-        | InterruptedException ex) {
-      // These are the most likely exceptions
-      logger.fatal("Caught expected, but unrecoverable exception, shutting down.", ex);
     } catch (Exception ex) {
-      logger.fatal("Caught unexpected and unrecoverable exception, shutting down.", ex);
+      logger.fatal("Caught unexpected and unrecoverable exception", ex);
     } finally {
-      logger.info("Attempting to clean up");
+      logger.info("One or more consumer threads have halted, cleaning up and shutting down.");
       consumers.forEach(consumer -> {
         consumer.shutdown();
       });
