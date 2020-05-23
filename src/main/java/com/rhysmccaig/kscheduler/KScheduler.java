@@ -3,6 +3,7 @@ package com.rhysmccaig.kscheduler;
 import com.typesafe.config.ConfigFactory;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.errors.InterruptException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,12 +26,7 @@ import com.typesafe.config.Config;
 
 
 public class KScheduler {
-
   static final Logger logger = LogManager.getLogger(KScheduler.class); 
-
-  // TODO: Move the shutdown timeouts into config
-  public static final Integer CONSUMER_SHUTDOWN_TIMEOUT_MS = 30000;
-  public static final Duration PRODUCER_SHUTDOWN_TIMEOUT_MS = Duration.ofMillis(30000);
 
   public static void main(String[] args) {
     final Config config = ConfigFactory.load();
@@ -38,7 +34,6 @@ public class KScheduler {
     final Integer consumerThreads = scheduleConfig.getInt("consumer.threads");
     final Duration consumerShutdownTimeout = scheduleConfig.getDuration("consumer.shutdown.timeout");
     final Duration producerShutdownTimeout = scheduleConfig.getDuration("producer.shutdown.timeout");
-
 
     Properties producerProps = ConfigUtils.toProperties(
         config.getConfig("kafka").withFallback(config.getConfig("kafka.producer")));
@@ -53,15 +48,18 @@ public class KScheduler {
       var topic = topicConfig.hasPath("topic") ? topicConfig.getString("topic") : name;
       return new DelayedTopicConfig(name, topic, delay);
     }).collect(Collectors.toList());
+    
     final var inputTopic = new DelayedTopicConfig("input", config.getString("topics.input"), Duration.ofSeconds(Long.MIN_VALUE));
     delayedTopics.add(inputTopic);
+    
     final var dlqTopic = config.getIsNull("topics.dlq") ? null : config.getString("topics.dlq");
+    
     // Set up the producer
     final var producer = new KafkaProducer<byte[],byte[]>(producerProps);
 
     // Set up a topic router
     final RoutingStrategy defaultRouterStrategy = Strategy.valueOf(config.getString("scheduler.router.strategy"));
-    final var topicRouter = new Router(delayedTopics, dlqTopic, defaultRouterStrategy, producer);
+    final var topicRouter = new Router(delayedTopics, dlqTopic, producer, defaultRouterStrategy);
     // Set up a consumers
     // One consumer thread per input topic for now
     final var topics = delayedTopics.stream()
@@ -73,8 +71,25 @@ public class KScheduler {
       consumerRunners.add(new DelayedConsumerRunner(consumerProps, topics, topicRouter));
     }
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
-    // TODO: Add shutdown hook to shutdown() consumer, and awaitTermination() of consumerExecutorService and shutdown producer
     final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
+
+    // Shutdown hook to clean up resources
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      consumerRunners.forEach(consumer -> consumer.shutdown());
+      try {
+        if (!consumerExecutorService.awaitTermination(consumerShutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
+          consumerExecutorService.shutdownNow();
+        }
+      } catch (InterruptedException ex) {
+        logger.error("InterruptedException while waiting for ExecutorService to terminate.", ex);
+      }
+      try {
+        producer.close(producerShutdownTimeout);
+      } catch (InterruptException ex) {
+        logger.error("InterruptException while waiting for producer to close.", ex);
+      }
+    }));
+
     // Run each consumer runner
     consumerRunners.stream()
         .forEach(consumer -> consumerEcs.submit(consumer));
@@ -87,23 +102,9 @@ public class KScheduler {
       consumerEcs.take().get();
     } catch (Exception ex) {
       logger.fatal("Caught unexpected and unrecoverable exception", ex);
-    } finally {
-      logger.info("One or more consumer threads have halted, cleaning up and shutting down.");
-      consumerRunners.forEach(consumer -> {
-        consumer.shutdown();
-      });
     }
-    consumerExecutorService.shutdown();
-    try {
-      if (!consumerExecutorService.awaitTermination(consumerShutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-        consumerExecutorService.shutdownNow();
-      }
-    } catch (InterruptedException ex) {
-      // Well.. we tried
-      logger.error("Timeout while waiting for consumer threads to terminate.", ex);
-    }
-    producer.close(producerShutdownTimeout);
-
+    logger.info("One or more consumer threads have halted, cleaning up and shutting down.");
+    System.exit(70);
   }
 
 }

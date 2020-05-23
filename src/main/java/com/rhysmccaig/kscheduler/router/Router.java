@@ -19,7 +19,10 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-// TODO: Validate thread-safety of this class
+/**
+ * Routes Scheduled Records to the next hop
+ * Thread Safe.
+ */
 public class Router {
   static final Logger logger = LogManager.getLogger(Router.class); 
 
@@ -29,15 +32,19 @@ public class Router {
   protected final RoutingStrategy defaultRouterStrategy;
   protected final KafkaProducer<byte[], byte[]> producer;
 
-  public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, RoutingStrategy defaultRoutingStrategy, KafkaProducer<byte[], byte[]> producer) {
+  public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<byte[], byte[]> producer, RoutingStrategy defaultRoutingStrategy) {
     this.delayedTopicsSet = delayedTopics.stream()
         .collect(Collectors.toCollection(() -> 
             new TreeSet<DelayedTopicConfig>((a, b) -> a.getDelay().compareTo(b.getDelay()))));
     this.topicDelays = delayedTopics.stream()
         .collect(Collectors.toMap(DelayedTopicConfig::getName, DelayedTopicConfig::getDelay));
     this.deadLetterTopic = deadLetterTopic;
-    this.defaultRouterStrategy = defaultRoutingStrategy;
+    this.defaultRouterStrategy = (defaultRoutingStrategy == null) ? Strategy.NOT_BEFORE : defaultRoutingStrategy;
     this.producer = producer;
+  }
+
+  public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<byte[], byte[]> producer) {
+    this(delayedTopics, deadLetterTopic, producer, null);
   }
 
   public Future<RecordMetadata> route(ScheduledRecord record) {
