@@ -9,3 +9,8 @@ Scheduling is a common requirement in modern software stacks. This project imple
 
 * KTable Mode: In memory buffer for upcoming tasks.
 * KStreams Only Mode: No in memory buffer, increased network usage, lower fidelity scheduling.
+
+
+## Flow
+
+input(json)->incoming->delay(n)->schedule->output->destination
