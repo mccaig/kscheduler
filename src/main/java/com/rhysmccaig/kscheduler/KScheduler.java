@@ -75,6 +75,7 @@ public class KScheduler {
 
     // Shutdown hook to clean up resources
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      logger.info("Executing cleanup as part of shutdown hook");
       consumerRunners.forEach(consumer -> consumer.shutdown());
       try {
         if (!consumerExecutorService.awaitTermination(consumerShutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {

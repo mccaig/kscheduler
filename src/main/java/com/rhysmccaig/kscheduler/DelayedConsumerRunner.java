@@ -140,7 +140,7 @@ public class DelayedConsumerRunner implements Callable<Void> {
           throw new InterruptException("Thread was interrupted when shutdown was not set");
         } 
       }
-      logger.info("Stopped processing loop as shutdown flag is set.");
+      logger.info("Stopped processing loop as shutdown flag is set");
     } catch (ExecutionException ex) {
       // This will occur if the producer encountered an issue while sending records to the broker
       // And should trigger a shutdown of the application
@@ -153,7 +153,7 @@ public class DelayedConsumerRunner implements Callable<Void> {
           logger.warn("Unexpected WakeupException. This should not occur if the consumer has been shutdown correctly using shutdown()", ex);
         }
     } finally {
-      logger.info("Cleaning up and shutting down");
+      logger.info("Shutting down");
       consumer.close();
     }
     return null;
