@@ -57,29 +57,29 @@ public class DelayedConsumerRunner implements Callable<Void> {
         // Get and process records
         var consumerRecords = consumer.poll(CONSUMER_POLL_DURATION);
         for (ConsumerRecord<byte[], byte[]> consumerRecord : consumerRecords) {
-          var scheduledRecord = new ScheduledRecord(consumerRecord);
-          if (paused.containsKey(scheduledRecord.getTopicPartition())) {
+          var record = new ScheduledRecord(consumerRecord);
+          if (paused.containsKey(record.topicPartition())) {
               // If this records partition was already paused in this batch, drop it - we will pick up later
             if (logger.isTraceEnabled()) {
               logger.trace("Skipping record from topic {}, partition {}, offset {}, as the partition is paused", consumerRecord.topic(), consumerRecord.partition(), consumerRecord.offset());
             }
           } else {
-            var delayUntil = router.delayUntil(scheduledRecord);
+            var delayUntil = router.delayUntil(record);
             if (delayUntil.isAfter(Instant.now())) {
-              var pausePartition = scheduledRecord.getTopicPartition();
+              var pausePartition = record.topicPartition();
               // The topic delay hasnt yet elapsed for this event, we need to pause this partition, and rewind
               try {
                 paused.put(pausePartition, delayUntil);
                 consumer.pause(List.of(pausePartition));
-                consumer.seek(pausePartition, scheduledRecord.getOffset());
+                consumer.seek(pausePartition, record.offset());
               } catch (IllegalStateException ex) {
                 paused.remove(pausePartition);
                 logger.warn("Attempted to pause/seek an unassigned partition: ", pausePartition);
               }
             } else { // Otherwise we can attempt to route this message
-              var result = router.route(scheduledRecord);
-              awaitingCommit.putIfAbsent(scheduledRecord.getTopicPartition(), List.of());
-              awaitingCommit.get(scheduledRecord.getTopicPartition()).add(Map.entry(consumerRecord.offset(), result));
+              var result = router.route(record);
+              awaitingCommit.putIfAbsent(record.topicPartition(), List.of());
+              awaitingCommit.get(record.topicPartition()).add(Map.entry(consumerRecord.offset(), result));
             }
           }
         }

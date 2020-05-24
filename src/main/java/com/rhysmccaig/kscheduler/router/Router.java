@@ -53,45 +53,45 @@ public class Router {
 
   public Future<RecordMetadata> route(ScheduledRecord record, Instant now) {
     final Future<RecordMetadata> produceResult;
-    if (record.getDestination() == null) {
+    if (record.metadata().getDestination() == null) {
       // If the destination header isnt set, then we dont know where to route the record to
-      logger.warn("Unable to route message from topic {}, partition {}, offset {} that was missing kschedule destination header", record.getTopic(), record.getPartition(), record.getOffset());
-      record.setError("Missing destination topic in record.");
+      logger.warn("Unable to route message from topic {}, partition {}, offset {} that was missing kschedule destination header", record.topic(), record.partition(), record.offset());
+      record.metadata().setError("Missing destination topic in record.");
       produceResult = routeDeadLetter(record);
-    } else if (record.getScheduled() == null) {
+    } else if (record.metadata().getScheduled() == null) {
       // If the record has no scheduled time, then drop the message, we dont want to assume when it should be delivered
-      logger.warn("Unable to route message from topic {}, partition {}, offset {} that was missing kschedule destination header", record.getTopic(), record.getPartition(), record.getOffset());
-      record.setError("Missing destination topic in record.");
+      logger.warn("Unable to route message from topic {}, partition {}, offset {} that was missing kschedule destination header", record.topic(), record.partition(), record.offset());
+      record.metadata().setError("Missing destination topic in record.");
       produceResult = routeDeadLetter(record);
-    } else if (record.hasExpired(now)) {
+    } else if (record.metadata().getExpires() != null && record.metadata().getExpires().isBefore(now)) {
       if (logger.isDebugEnabled()) {
-        logger.debug("message from topic {}, partition {}, offset {} expired at {}", record.getTopic(), record.getPartition(), record.getOffset(), record.getExpires().toString());
+        logger.debug("message from topic {}, partition {}, offset {} expired at {}", record.topic(), record.partition(), record.offset(), record.metadata().getExpires().toString());
       }
-      record.setError("Record Expired.");
+      record.metadata().setError("Record Expired.");
       produceResult = routeDeadLetter(record);
     } else {
       // All clear, continue to route the event
-      var nextTopic = routingStrategy.getNextTopic(delayedTopicsSet, now, record.getScheduled(), record.getDestination());
-      produceResult = producer.send(new ProducerRecord<byte[],byte[]>(nextTopic, null, null, record.getKey(), record.getValue(), record.getHeaders()));
+      var nextTopic = routingStrategy.getNextTopic(delayedTopicsSet, now, record.metadata().getScheduled(), record.metadata().getDestination());
+      produceResult = producer.send(new ProducerRecord<byte[],byte[]>(nextTopic, null, null, record.key(), record.value(), record.headers()));
     }
     return produceResult;
   }
 
   public Future<RecordMetadata> routeDeadLetter(ScheduledRecord record) {
     if (deadLetterTopic != null) {
-      return producer.send(new ProducerRecord<byte[],byte[]>(deadLetterTopic, null, null, record.getKey(), record.getValue(), record.getHeaders()));
+      return producer.send(new ProducerRecord<byte[],byte[]>(deadLetterTopic, null, null, record.key(), record.value(), record.headers()));
     } else {
       return CompletableFuture.completedFuture(null);
     }
   }
 
   public Instant delayUntil(ScheduledRecord record) {
-    final var topicDelay = topicDelays.get(record.getTopic());
+    final var topicDelay = topicDelays.get(record.topic());
     final Instant delayUntil;
-    if ((topicDelay == null) || record.getProduced() == null) {
+    if ((topicDelay == null) || record.metadata().getProduced() == null) {
       delayUntil = Instant.MIN;
     } else {
-      delayUntil = record.getProduced().plus(topicDelay);
+      delayUntil = record.metadata().getProduced().plus(topicDelay);
     }
     return delayUntil;
   }
