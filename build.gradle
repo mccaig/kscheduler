@@ -8,8 +8,11 @@ repositories {
      mavenCentral()
 }
 
+
 dependencies {
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '2.5.0'
+    implementation group: 'org.apache.kafka', name: 'kafka-streams', version: '2.5.0'
+    implementation group: 'com.esotericsoftware', name: 'kryo', version: '5.0.0-RC7-SNAPSHOT'
     implementation group: 'com.typesafe', name: 'config', version: '1.4.0'
     implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
     implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
@@ -17,6 +20,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.4'
 
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.6.2'
+    
 }
 
 group 'com.rhysmccaig.kscheduler'
@@ -41,3 +45,4 @@ java {
 
 test {
 }
+

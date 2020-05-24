@@ -24,6 +24,9 @@ import com.rhysmccaig.kscheduler.router.Strategy;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
 
+import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.Topology;
+
 
 public class KScheduler {
   static final Logger logger = LogManager.getLogger(KScheduler.class); 
@@ -72,6 +75,15 @@ public class KScheduler {
     }
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
     final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
+
+    // Streams
+    //final Topology builder = new Topology();
+    //builder.addSource("Scheduled", "scheduled")
+    //    .addProcessor(name, supplier, parentNames)
+
+    
+
+
 
     // Shutdown hook to clean up resources
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -14,3 +14,7 @@ Scheduling is a common requirement in modern software stacks. This project imple
 ## Flow
 
 input(json)->incoming->delay(n)->schedule->output->destination
+
+## Streams Table
+Key=(scheduled-id)
+Value=(key,value,scheduled, destination)

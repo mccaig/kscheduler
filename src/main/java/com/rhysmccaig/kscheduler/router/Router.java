@@ -29,7 +29,7 @@ public class Router {
   protected final SortedSet<DelayedTopicConfig> delayedTopicsSet;
   protected final Map<String, Duration> topicDelays;
   protected final String deadLetterTopic;
-  protected final RoutingStrategy defaultRouterStrategy;
+  protected final RoutingStrategy routingStrategy;
   protected final KafkaProducer<byte[], byte[]> producer;
 
   public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<byte[], byte[]> producer, RoutingStrategy defaultRoutingStrategy) {
@@ -39,7 +39,7 @@ public class Router {
     this.topicDelays = delayedTopics.stream()
         .collect(Collectors.toMap(DelayedTopicConfig::getName, DelayedTopicConfig::getDelay));
     this.deadLetterTopic = deadLetterTopic;
-    this.defaultRouterStrategy = (defaultRoutingStrategy == null) ? Strategy.NOT_BEFORE : defaultRoutingStrategy;
+    this.routingStrategy = (defaultRoutingStrategy == null) ? Strategy.NOT_BEFORE : defaultRoutingStrategy;
     this.producer = producer;
   }
 
@@ -71,7 +71,6 @@ public class Router {
       produceResult = routeDeadLetter(record);
     } else {
       // All clear, continue to route the event
-      var routingStrategy = (record.getStrategy() == null) ? defaultRouterStrategy : record.getStrategy();
       var nextTopic = routingStrategy.getNextTopic(delayedTopicsSet, now, record.getScheduled(), record.getDestination());
       produceResult = producer.send(new ProducerRecord<byte[],byte[]>(nextTopic, null, null, record.getKey(), record.getValue(), record.getHeaders()));
     }
