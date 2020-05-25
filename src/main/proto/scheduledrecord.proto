@@ -3,25 +3,24 @@ syntax = "proto3";
 package com.rhysmccaig.kscheduler.model;
 
 option java_package = "com.rhysmccaig.kscheduler.model";
-option java_outer_classname = "ScheduledRecordProtos";
+option java_outer_classname = "Protos";
 
 message ScheduledRecordMetadata {
-  required string uuid = 1;
-  required string destination = 2;
-  required int64 scheduled = 3;
-  optional int64 produced = 4;
-  optional int64 expires = 5;
-  optional string error = 6;
+  string id = 1;
+  string destination = 2;
+  int64 scheduled = 3;
+  int64 produced = 4;
+  int64 expires = 5;
+  string error = 6;
 }
 
 message ScheduledRecord {
-  required metadata ScheduledRecordMetadata = 1;
-  optional bytes key = 2;
-  optional bytes value = 3;
-  repeated Header headers = 4;
+  bytes key = 1;
+  bytes value = 2;
+  repeated Header headers = 3;
 }
 
 message Header {
-  required string name = 1;
-  optional bytes value = 2;
+  string name = 1;
+  bytes value = 2;
 }

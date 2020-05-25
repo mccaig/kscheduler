@@ -18,9 +18,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
+import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.router.RoutingStrategy;
-import com.rhysmccaig.kscheduler.router.Strategy;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
 
@@ -61,7 +61,8 @@ public class KScheduler {
     final var producer = new KafkaProducer<byte[],byte[]>(producerProps);
 
     // Set up a topic router
-    final RoutingStrategy defaultRouterStrategy = Strategy.valueOf(config.getString("scheduler.router.strategy"));
+    final Config routerConfig = scheduleConfig.getConfig("router");
+    final RoutingStrategy defaultRouterStrategy = new NotBeforeStrategy(routerConfig.getDuration("delay.grace.period"));
     final var topicRouter = new Router(delayedTopics, dlqTopic, producer, defaultRouterStrategy);
     // Set up a consumers
     // One consumer thread per input topic for now
