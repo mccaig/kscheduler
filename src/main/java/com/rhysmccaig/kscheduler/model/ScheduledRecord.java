@@ -12,6 +12,9 @@ public class ScheduledRecord {
   private byte[] value;
 
   public ScheduledRecord(ScheduledRecordMetadata metadata, byte[] key, byte[] value) {
+    if (metadata == null) {
+      throw new NullPointerException("metadata must not be null");
+    }
     this.metadata = metadata;
     this.key = key;
     this.value = value;

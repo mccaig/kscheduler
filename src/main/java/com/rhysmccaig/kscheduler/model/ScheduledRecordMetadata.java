@@ -2,9 +2,6 @@ package com.rhysmccaig.kscheduler.model;
 
 import java.time.Instant;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.rhysmccaig.kscheduler.model.protos.Protos;
-
 public final class ScheduledRecordMetadata {
     
   private Instant scheduled;
@@ -16,8 +13,8 @@ public final class ScheduledRecordMetadata {
   private String error;
   
   public ScheduledRecordMetadata(Instant scheduled, String id, String destination, Instant created, Instant expires, Instant produced, String error) {
-    if (scheduled == null || id == null || destination == null) {
-      throw new NullPointerException("fields: [scheduled, id, destination] must not be null");
+    if (scheduled == null) {
+      throw new NullPointerException("scheduled must not be null");
     }
     this.scheduled = scheduled;
     this.id = id;

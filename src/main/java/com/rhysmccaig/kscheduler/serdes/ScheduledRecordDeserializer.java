@@ -2,7 +2,6 @@ package com.rhysmccaig.kscheduler.serdes;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
-import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
 
 import org.apache.kafka.common.errors.SerializationException;

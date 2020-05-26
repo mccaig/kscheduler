@@ -47,7 +47,6 @@ java {
 test {
     useJUnitPlatform()
     enableAssertions = true
-    
 }
 
 protobuf {

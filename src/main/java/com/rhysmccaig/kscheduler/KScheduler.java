@@ -36,6 +36,7 @@ public class KScheduler {
   public static void main(String[] args) {
     final Config config = ConfigFactory.load();
     final Config scheduleConfig = config.getConfig("scheduler");
+    final Config topicsConfig = config.getConfig("topics");
     final Integer consumerThreads = scheduleConfig.getInt("consumer.threads");
     final Duration consumerShutdownTimeout = scheduleConfig.getDuration("consumer.shutdown.timeout");
     final Duration producerShutdownTimeout = scheduleConfig.getDuration("producer.shutdown.timeout");
@@ -46,12 +47,12 @@ public class KScheduler {
     Properties consumerProps = ConfigUtils.toProperties(
         config.getConfig("kafka").withFallback(config.getConfig("kafka.consumer")));
 
-    var delayedTopicsConfig = config.getConfig("topics.delayed");
-    var delayedTopicsNames = config.getObject("topics.delayed").keySet();
+    var delayedTopicsConfig = topicsConfig.getConfig("delayed");
+    var delayedTopicsNames = topicsConfig.getObject("delayed").keySet();
     List<DelayedTopicConfig> delayedTopics = delayedTopicsNames.stream().map(name -> {
-      var topicConfig = delayedTopicsConfig.getConfig(name);
-      var delay = topicConfig.getDuration("delay");
-      var topic = topicConfig.hasPath("topic") ? topicConfig.getString("topic") : name;
+      var delayedTopicConfig = delayedTopicsConfig.getConfig(name);
+      var delay = delayedTopicConfig.getDuration("delay");
+      var topic = delayedTopicConfig.hasPath("topic") ? delayedTopicConfig.getString("topic") : name;
       return new DelayedTopicConfig(name, topic, delay);
     }).collect(Collectors.toList());
     
@@ -80,9 +81,11 @@ public class KScheduler {
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
     final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
-    // Streams
-    //final Topology builder = new Topology();
-    //builder.addSource("Scheduled", "scheduled")
+    // Streams component
+    final Topology builder = new Topology();
+    builder.addSource("scheduler", "scheduler");
+        //.add
+    
     //    .addProcessor(name, supplier, parentNames)
 
     

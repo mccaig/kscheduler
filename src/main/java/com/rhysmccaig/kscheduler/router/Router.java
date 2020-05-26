@@ -36,6 +36,8 @@ public class Router {
   protected final String deadLetterTopic;
   protected final RoutingStrategy routingStrategy;
   protected final KafkaProducer<ScheduledRecordMetadata, ScheduledRecord> producer;
+  // TODO: Add config to know maximum schedule time
+  // RouterConfig.[delayedTopics|deadLetterTopic|maximumDelay]?
 
   public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<ScheduledRecordMetadata, ScheduledRecord> producer, RoutingStrategy defaultRoutingStrategy) {
     this.delayedTopicsSet = delayedTopics.stream()

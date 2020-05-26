@@ -1,6 +1,7 @@
 package com.rhysmccaig.kscheduler.processor;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
 import org.apache.kafka.streams.KeyValue;
@@ -12,11 +13,12 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 
 
-public class ScheduleProcessor implements Processor<byte[], byte[]> {
+public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, ScheduledRecord> {
   static final Logger logger = LogManager.getLogger(ScheduleProcessor.class); 
 
   // How often we scan the records database for records that are ready to be forwarded.
@@ -24,7 +26,7 @@ public class ScheduleProcessor implements Processor<byte[], byte[]> {
   public static final String STATE_STORE_NAME = "kscheduler-scheduled";
 
   private ProcessorContext context;
-  private KeyValueStore<ScheduledRecordMetadata, ScheduledRecord> kvStore;
+  private KeyValueStore<ScheduledId, ScheduledRecord> kvStore;
   private final Duration punctuateSchedule;
 
   public ScheduleProcessor(Duration punctuateSchedule) {
@@ -40,25 +42,39 @@ public class ScheduleProcessor implements Processor<byte[], byte[]> {
   @SuppressWarnings("unchecked")
   public void init(ProcessorContext context) {
     this.context = context;
-    kvStore = (KeyValueStore<ScheduledRecordMetadata, ScheduledRecord>) context.getStateStore(STATE_STORE_NAME);
+    kvStore = (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(STATE_STORE_NAME);
 
     // schedule a punctuate() method every second based on wall-clock time
     this.context.schedule(punctuateSchedule, PunctuationType.WALL_CLOCK_TIME, (timestamp) -> {
-      KeyValueIterator<ScheduledRecordMetadata, ScheduledRecord> iter = this.kvStore.range(null, null);
+      var notBeforeInstant = Instant.ofEpochMilli(timestamp);
+      var beforeInstant = Instant.ofEpochMilli(timestamp).plus(punctuateSchedule);
+      var from = new ScheduledId(notBeforeInstant, null);
+      var to = new ScheduledId(beforeInstant, null);
+      // Cant yet define our insertion order, but by default RocksDB orders items lexigraphically
+      // 
+      KeyValueIterator<ScheduledId, ScheduledRecord> iter = this.kvStore.range(from, to);
       while (iter.hasNext()) {
-          KeyValue<ScheduledRecordMetadata, ScheduledRecord> entry = iter.next();
-          context.forward(entry.key, entry.value);
+          KeyValue<ScheduledId, ScheduledRecord> entry = iter.next();
+          var key = entry.key;
+          var value = entry.value;
+          assert (key.scheduled().isAfter(notBeforeInstant.minus(Duration.ofNanos(1))));
+          assert (value.metadata().scheduled().isAfter(notBeforeInstant.minus(Duration.ofNanos(1))));
+          assert (key.scheduled().isBefore(beforeInstant));
+          assert (value.metadata().scheduled().isBefore(beforeInstant));
+          context.forward(value.metadata(), value);
           this.kvStore.delete(entry.key);
       }
       iter.close();
-      // commit the current processing progress
+      // commit the current processing progress?
       context.commit();
-  });
-
+    });
   }
 
-  public void process(byte[] key, byte[] value) {
-
+  /**
+   * Add the record into the state store for processing
+   */
+  public void process(ScheduledRecordMetadata key, ScheduledRecord value) {
+    this.kvStore.put(new ScheduledId(key.scheduled(), key.id()), value);
   }
 
   public void close() {
