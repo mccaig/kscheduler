@@ -2,58 +2,53 @@ package com.rhysmccaig.kscheduler.model;
 
 import java.time.Instant;
 
-import org.apache.kafka.common.header.Header;
-import org.apache.kafka.common.header.Headers;
-import org.apache.kafka.common.header.internals.RecordHeader;
-
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.rhysmccaig.kscheduler.model.protos.Protos;
 
 public final class ScheduledRecordMetadata {
     
-  public static String HEADER_NAME = "kscheduler-metadata";
-
-
+  private Instant scheduled;
   private String id;
   private String destination;
-  private Instant scheduled;
-  private Instant produced;
+  private Instant created;
   private Instant expires;
+  private Instant produced;
   private String error;
   
-  public ScheduledRecordMetadata(String id, String destination, Instant scheduled, Instant produced, Instant expires, String error) {
+  public ScheduledRecordMetadata(Instant scheduled, String id, String destination, Instant created, Instant expires, Instant produced, String error) {
+    if (scheduled == null || id == null || destination == null) {
+      throw new NullPointerException("fields: [scheduled, id, destination] must not be null");
+    }
+    this.scheduled = scheduled;
     this.id = id;
     this.destination = destination;
-    this.scheduled = scheduled;
-    this.produced = produced;
+    this.created = created;
     this.expires = expires;
+    this.produced = produced;
     this.error = error;
   }
 
-  public String getId() {
+  public String id() {
     return id;
   }
 
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getDestination() {
+  public String destination() {
     return destination;
   }
 
-  public void setDestination(String destination) {
-    this.destination = destination;
-  }
-
-  public Instant getScheduled() {
+  public Instant scheduled() {
     return scheduled;
   }
 
-  public void setScheduled(Instant scheduled) {
-    this.scheduled = scheduled;
+  public Instant expires() {
+    return expires;
   }
 
-  public Instant getProduced() {
+  public Instant created() {
+    return created;
+  }
+
+  public Instant produced() {
     return produced;
   }
 
@@ -61,61 +56,13 @@ public final class ScheduledRecordMetadata {
     this.produced = produced;
   }
 
-  public Instant getExpires() {
-    return expires;
-  }
-
-  public void setExpires(Instant expires) {
-    this.expires = expires;
-  }
-
-  public String getError() {
+  public String error() {
     return error;
   }
 
   public void setError(String error) {
     this.error = error;
   }
-
-  public byte[] toBytes() {
-    return Protos.ScheduledRecordMetadata.newBuilder()
-        .setId(id)
-        .setDestination(destination)
-        .setScheduled(scheduled.toEpochMilli())
-        .setProduced(produced.toEpochMilli())
-        .setExpires(expires.toEpochMilli())
-        .setError(error)
-        .build().toByteArray();
-  }
-
-  public Header toHeader() {
-    return new RecordHeader(HEADER_NAME, this.toBytes());
-  }
-
-  public static ScheduledRecordMetadata fromBytes(byte[] bytes) {
-    Protos.ScheduledRecordMetadata proto;
-    try {
-      proto = Protos.ScheduledRecordMetadata.parseFrom(bytes);
-    } catch (InvalidProtocolBufferException ex) {
-      proto = null;
-    }
-    if (proto == null) {
-      return null;
-    }
-   return new ScheduledRecordMetadata(
-      proto.getId(), 
-      proto.getDestination(), 
-      Instant.ofEpochMilli(proto.getScheduled()),
-      Instant.ofEpochMilli(proto.getProduced()),
-      Instant.ofEpochMilli(proto.getExpires()), 
-      proto.getError());
-  }
-  
-  public static ScheduledRecordMetadata fromHeaders(Headers headers) {
-    return ScheduledRecordMetadata.fromBytes(headers.lastHeader(HEADER_NAME).value());
-  }
-
-  
 
 }
 

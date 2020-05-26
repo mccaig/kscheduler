@@ -3,6 +3,7 @@ package com.rhysmccaig.kscheduler.processor;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.Processor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
@@ -12,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 
 
 public class ScheduleProcessor implements Processor<byte[], byte[]> {
@@ -22,7 +24,7 @@ public class ScheduleProcessor implements Processor<byte[], byte[]> {
   public static final String STATE_STORE_NAME = "kscheduler-scheduled";
 
   private ProcessorContext context;
-  private KeyValueStore<String, ScheduledRecord> kvStore;
+  private KeyValueStore<ScheduledRecordMetadata, ScheduledRecord> kvStore;
   private final Duration punctuateSchedule;
 
   public ScheduleProcessor(Duration punctuateSchedule) {
@@ -38,17 +40,17 @@ public class ScheduleProcessor implements Processor<byte[], byte[]> {
   @SuppressWarnings("unchecked")
   public void init(ProcessorContext context) {
     this.context = context;
-    kvStore = (KeyValueStore<String, ScheduledRecord>) context.getStateStore(STATE_STORE_NAME);
+    kvStore = (KeyValueStore<ScheduledRecordMetadata, ScheduledRecord>) context.getStateStore(STATE_STORE_NAME);
 
     // schedule a punctuate() method every second based on wall-clock time
     this.context.schedule(punctuateSchedule, PunctuationType.WALL_CLOCK_TIME, (timestamp) -> {
-      KeyValueIterator<String, ScheduledRecord> iter = this.kvStore.all();
+      KeyValueIterator<ScheduledRecordMetadata, ScheduledRecord> iter = this.kvStore.range(null, null);
       while (iter.hasNext()) {
-          KeyValue<String, Long> entry = iter.next();
-          context.forward(entry.key, entry.value.toString());
+          KeyValue<ScheduledRecordMetadata, ScheduledRecord> entry = iter.next();
+          context.forward(entry.key, entry.value);
+          this.kvStore.delete(entry.key);
       }
       iter.close();
-
       // commit the current processing progress
       context.commit();
   });

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
 import com.rhysmccaig.kscheduler.router.Router;
 
@@ -34,7 +35,7 @@ public class DelayedConsumerRunner implements Callable<Void> {
   private static final Duration CONSUMER_POLL_DURATION = Duration.ofMillis(100);
 
   private final List<String> topics;
-  private final KafkaConsumer<byte[], byte[]> consumer;
+  private final KafkaConsumer<ScheduledRecordMetadata, ScheduledRecord> consumer;
   private final Router router;
   private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
@@ -56,32 +57,31 @@ public class DelayedConsumerRunner implements Callable<Void> {
       consumer.subscribe(topics);
       while (!shutdown.get()) {
         // Get and process records
-        var consumedRecords = consumer.poll(CONSUMER_POLL_DURATION);
-        for (ConsumerRecord<byte[], byte[]> consumedRecord : consumedRecords) {
-          var source = TopicPartitionOffset.fromConsumerRecord(consumedRecord);
-          if (paused.containsKey(source.getTopicPartition())) {
+        var records = consumer.poll(CONSUMER_POLL_DURATION);
+        for (ConsumerRecord<ScheduledRecordMetadata, ScheduledRecord> record : records) {
+          var source = TopicPartitionOffset.fromConsumerRecord(record);
+          if (paused.containsKey(source.topicPartition())) {
               // If this records partition was already paused in this batch, drop it - we will pick up later
             if (logger.isTraceEnabled()) {
               logger.trace("Skipping record from {}, as the partition is paused", source);
             }
           } else {
-            var record = new ScheduledRecord(consumedRecord); 
-            var delayUntil = router.processAt(source, record);
+            var delayUntil = router.processAt(record);
             if (delayUntil.isAfter(Instant.now())) {
-              var pausePartition = source.getTopicPartition();
+              var pausePartition = source.topicPartition();
               // The topic delay hasnt yet elapsed for this event, we need to pause this partition, and rewind
               try {
                 paused.put(pausePartition, delayUntil);
                 consumer.pause(List.of(pausePartition));
-                consumer.seek(pausePartition, source.getOffset());
+                consumer.seek(pausePartition, source.offset());
               } catch (IllegalStateException ex) {
                 paused.remove(pausePartition);
                 logger.warn("Attempted to pause/seek an unassigned partition: ", pausePartition);
               }
             } else { // Otherwise we can attempt to route this message
-              var result = router.route(source, record);
-              awaitingCommit.putIfAbsent(source.getTopicPartition(), List.of());
-              awaitingCommit.get(source.getTopicPartition()).add(Map.entry(source.getOffset(), result));
+              var result = router.forward(record);
+              awaitingCommit.putIfAbsent(source.topicPartition(), List.of());
+              awaitingCommit.get(source.topicPartition()).add(Map.entry(source.offset(), result));
             }
           }
         }

@@ -4,17 +4,21 @@ import java.time.Instant;
 import java.util.SortedSet;
 
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 
-public interface RoutingStrategy {
+public abstract class RoutingStrategy {
   /**
    * 
    * @param delayedTopics Must include at least one topic with a non negative delay. Behaviour is not defined if this is not the case.
-   * @param currentTime   What time is it now?
-   * @param scheduled     At what time should the message be scheduled?
-   * @param targetTopic   Where are we ssending the message at the scheduled time.
-   * @return              The next topic to send the message to
+   * @param metadata
+   * @param now         What time is it now.
+   * @return            The next topic to send the message to
    */
-  public String getNextTopic(SortedSet<DelayedTopicConfig> delayedTopics, Instant currentTime, Instant scheduled, String targetTopic);
+  public abstract String nextTopic(SortedSet<DelayedTopicConfig> delayedTopics, ScheduledRecordMetadata metadata, Instant now);
+
+  public String nextTopic(SortedSet<DelayedTopicConfig> delayedTopics, ScheduledRecordMetadata metadata) {
+    return nextTopic(delayedTopics, metadata, Instant.now());
+  }
 
 }
 

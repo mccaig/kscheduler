@@ -15,24 +15,24 @@ public class TopicPartitionOffset {
     this.offset = offset;
   }
 
-  public String getTopic() {
+  public String topic() {
     return topic;
   }
 
-  public int getPartition() {
+  public int partition() {
     return partition;
   }
 
-  public long getOffset() {
+  public long offset() {
     return offset;
   }
 
-  public TopicPartition getTopicPartition() {
+  public TopicPartition topicPartition() {
     return new TopicPartition(topic, partition);
   }
 
-  public static TopicPartitionOffset fromConsumerRecord(ConsumerRecord<?, ?> consumerRecord) {
-    return new TopicPartitionOffset(consumerRecord.topic(), consumerRecord.partition(), consumerRecord.offset());
+  public static TopicPartitionOffset fromConsumerRecord(ConsumerRecord<?, ?> record) {
+    return new TopicPartitionOffset(record.topic(), record.partition(), record.offset());
   }
 
   @Override

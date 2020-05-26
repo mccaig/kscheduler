@@ -1,26 +1,25 @@
 syntax = "proto3";
 
-package com.rhysmccaig.kscheduler.model;
+import "google/protobuf/timestamp.proto";
 
-option java_package = "com.rhysmccaig.kscheduler.model";
+package com.rhysmccaig.kscheduler.model.protos;
+
+
+option java_package = "com.rhysmccaig.kscheduler.model.protos";
 option java_outer_classname = "Protos";
 
 message ScheduledRecordMetadata {
-  string id = 1;
-  string destination = 2;
-  int64 scheduled = 3;
-  int64 produced = 4;
-  int64 expires = 5;
-  string error = 6;
+  google.protobuf.Timestamp scheduled = 1;
+  string id = 2;
+  string destination = 3;
+  google.protobuf.Timestamp expires = 4;
+  google.protobuf.Timestamp created = 5;
+  google.protobuf.Timestamp produced = 6;
+  string error = 7;
 }
 
 message ScheduledRecord {
-  bytes key = 1;
-  bytes value = 2;
-  repeated Header headers = 3;
-}
-
-message Header {
-  string name = 1;
-  bytes value = 2;
+  ScheduledRecordMetadata metadata = 1;
+  bytes key = 2;
+  bytes value = 3;
 }

@@ -5,8 +5,9 @@ import java.time.Instant;
 import java.util.SortedSet;
 
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 
-public class NotBeforeStrategy implements RoutingStrategy {
+public class NotBeforeStrategy extends RoutingStrategy {
 
   public static final Duration DEFAULT_DELAY_GRACE_PERIOD = Duration.ofMinutes(1);
   
@@ -31,11 +32,13 @@ public class NotBeforeStrategy implements RoutingStrategy {
   }
     
   @Override
-  public String getNextTopic(SortedSet<DelayedTopicConfig> delayedTopics, Instant currentTime, Instant scheduled, String targetTopic) {
-    if (scheduled.isBefore(currentTime)) {
-      return targetTopic;
+  public String nextTopic(SortedSet<DelayedTopicConfig> delayedTopics, ScheduledRecordMetadata metadata, Instant now) {
+    var scheduled = metadata.scheduled();
+    var destination = metadata.destination();
+    if (scheduled.isBefore(now)) {
+      return destination;
     }
-    var idealDelay = Duration.between(currentTime, scheduled.minus(delayGracePeriod));
+    var idealDelay = Duration.between(now, scheduled.minus(delayGracePeriod));
     var nextTopic = delayedTopics.stream()
         .reduce(null, (next, topic) -> {
           if (!topic.getDelay().isNegative()) { // Only interested in topics with non negative delay

@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
+import com.rhysmccaig.kscheduler.model.ScheduledRecord;
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.router.RoutingStrategy;
@@ -40,6 +42,7 @@ public class KScheduler {
 
     Properties producerProps = ConfigUtils.toProperties(
         config.getConfig("kafka").withFallback(config.getConfig("kafka.producer")));
+    
     Properties consumerProps = ConfigUtils.toProperties(
         config.getConfig("kafka").withFallback(config.getConfig("kafka.consumer")));
 
@@ -58,7 +61,7 @@ public class KScheduler {
     final var dlqTopic = config.getIsNull("topics.dlq") ? null : config.getString("topics.dlq");
     
     // Set up the producer
-    final var producer = new KafkaProducer<byte[],byte[]>(producerProps);
+    final var producer = new KafkaProducer<ScheduledRecordMetadata, ScheduledRecord>(producerProps);
 
     // Set up a topic router
     final Config routerConfig = scheduleConfig.getConfig("router");
