@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigFactory;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.InterruptException;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,14 +21,21 @@ import java.util.stream.Collectors;
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
+import com.rhysmccaig.kscheduler.processor.ScheduleProcessor;
 import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.router.RoutingStrategy;
+import com.rhysmccaig.kscheduler.serdes.ScheduledRecordDeserializer;
+import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
+import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerializer;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
 
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
 
 
 public class KScheduler {
@@ -37,15 +45,17 @@ public class KScheduler {
     final Config config = ConfigFactory.load();
     final Config scheduleConfig = config.getConfig("scheduler");
     final Config topicsConfig = config.getConfig("topics");
+    final Config kafkaConfig = config.getConfig("kafka");
+
     final Integer consumerThreads = scheduleConfig.getInt("consumer.threads");
     final Duration consumerShutdownTimeout = scheduleConfig.getDuration("consumer.shutdown.timeout");
     final Duration producerShutdownTimeout = scheduleConfig.getDuration("producer.shutdown.timeout");
+    final Duration streamsShutdownTimeout = scheduleConfig.getDuration("streams.shutdown.timeout");
 
-    Properties producerProps = ConfigUtils.toProperties(
-        config.getConfig("kafka").withFallback(config.getConfig("kafka.producer")));
-    
-    Properties consumerProps = ConfigUtils.toProperties(
-        config.getConfig("kafka").withFallback(config.getConfig("kafka.consumer")));
+
+    Properties producerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("producer")));
+    Properties consumerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("consumer")));
+    Properties streamsProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("streams")));
 
     var delayedTopicsConfig = topicsConfig.getConfig("delayed");
     var delayedTopicsNames = topicsConfig.getObject("delayed").keySet();
@@ -82,15 +92,16 @@ public class KScheduler {
     final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
     // Streams component
-    final Topology builder = new Topology();
-    builder.addSource("scheduler", "scheduler");
-        //.add
-    
-    //    .addProcessor(name, supplier, parentNames)
-
-    
-
-
+    StoreBuilder<KeyValueStore<String, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
+      Stores.persistentKeyValueStore("Counts"),
+        Serdes.String(),
+        Serdes.serdeFrom(new ScheduledRecordSerializer(), new ScheduledRecordDeserializer()));
+    final Topology topology = new Topology()
+        .addSource("Scheduled", "scheduled")
+        .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuation.interval")), "Scheduled")
+        .addStateStore(storeBuilder, ScheduleProcessor.STATE_STORE_NAME)
+        .addSink("Outgoing", topicsConfig.getString("outgoing"));
+    final KafkaStreams streams = new KafkaStreams(topology, streamsProps);
 
     // Shutdown hook to clean up resources
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -107,6 +118,11 @@ public class KScheduler {
         producer.close(producerShutdownTimeout);
       } catch (InterruptException ex) {
         logger.error("InterruptException while waiting for producer to close.", ex);
+      }
+      try {
+        streams.close(streamsShutdownTimeout);
+      } catch (InterruptException ex) {
+        logger.error("InterruptException while waiting for streams to close.", ex);
       }
     }));
 
