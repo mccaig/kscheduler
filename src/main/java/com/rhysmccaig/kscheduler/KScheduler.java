@@ -89,7 +89,6 @@ public class KScheduler {
       consumerRunners.add(new DelayedConsumerRunner(consumerProps, topics, topicRouter));
     }
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
-    final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
     // Streams component
     StoreBuilder<KeyValueStore<String, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
@@ -97,11 +96,18 @@ public class KScheduler {
         Serdes.String(),
         Serdes.serdeFrom(new ScheduledRecordSerializer(), new ScheduledRecordDeserializer()));
     final Topology topology = new Topology()
-        .addSource("Scheduled", "scheduled")
-        .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuation.interval")), "Scheduled")
-        .addStateStore(storeBuilder, ScheduleProcessor.STATE_STORE_NAME)
-        .addSink("Outgoing", topicsConfig.getString("outgoing"));
+        .addSource("Scheduled", topicsConfig.getString("scheduled"))
+        .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuate.interval")), "Scheduled")
+        .addStateStore(storeBuilder, ScheduleProcessor.PROCESSOR_NAME)
+        .addSink("Outgoing", topicsConfig.getString("outgoing"), ScheduleProcessor.PROCESSOR_NAME);
+    logger.debug("streams topology: {}", topology.describe());
+    try{
+      Thread.sleep(30000L);
+    }catch(Exception ex) {
+
+    }
     final KafkaStreams streams = new KafkaStreams(topology, streamsProps);
+    final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
     // Shutdown hook to clean up resources
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
