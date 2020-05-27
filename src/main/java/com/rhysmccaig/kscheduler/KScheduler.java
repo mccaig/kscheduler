@@ -21,12 +21,13 @@ import java.util.stream.Collectors;
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.processor.ScheduleProcessor;
+import com.rhysmccaig.kscheduler.streams.ScheduleProcessor;
 import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.router.RoutingStrategy;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordDeserializer;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
+import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerde;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerializer;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
@@ -89,25 +90,23 @@ public class KScheduler {
       consumerRunners.add(new DelayedConsumerRunner(consumerProps, topics, topicRouter));
     }
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
+    final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
     // Streams component
     StoreBuilder<KeyValueStore<String, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
       Stores.persistentKeyValueStore("Counts"),
         Serdes.String(),
-        Serdes.serdeFrom(new ScheduledRecordSerializer(), new ScheduledRecordDeserializer()));
+        new ScheduledRecordSerde());
+
     final Topology topology = new Topology()
         .addSource("Scheduled", topicsConfig.getString("scheduled"))
         .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuate.interval")), "Scheduled")
         .addStateStore(storeBuilder, ScheduleProcessor.PROCESSOR_NAME)
         .addSink("Outgoing", topicsConfig.getString("outgoing"), ScheduleProcessor.PROCESSOR_NAME);
+        
     logger.debug("streams topology: {}", topology.describe());
-    try{
-      Thread.sleep(30000L);
-    }catch(Exception ex) {
-
-    }
+  
     final KafkaStreams streams = new KafkaStreams(topology, streamsProps);
-    final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
     // Shutdown hook to clean up resources
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -132,6 +131,8 @@ public class KScheduler {
       }
     }));
 
+
+    
     // Run each consumer runner
     consumerRunners.stream()
         .forEach(consumer -> consumerEcs.submit(consumer));
