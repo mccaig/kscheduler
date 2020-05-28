@@ -15,6 +15,6 @@ public class SourceToScheduledMapper implements KeyValueMapper<byte[], byte[], I
         //var metadata = new ScheduledRecordMetadata(, id, destination, created, expires, produced, error)
         return List.of(new KeyValue<ScheduledRecordMetadata, ScheduledRecord>(
             new ScheduledRecordMetadata(null, null, null, null, null, null),
-            new ScheduledRecord(null, null, null)));
+            new ScheduledRecord(null, null, null, null)));
     }
 }

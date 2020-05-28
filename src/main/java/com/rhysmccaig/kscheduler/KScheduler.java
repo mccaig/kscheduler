@@ -5,7 +5,6 @@ import com.typesafe.config.ConfigFactory;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -117,7 +116,8 @@ Serdes.ByteArray().getClass().getName();
         .addSource("Scheduled", new ByteArrayDeserializer(), new ByteArrayDeserializer(), topicsConfig.getString("scheduled"))
         .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuate.interval")), "Scheduled")
         .addStateStore(storeBuilder, ScheduleProcessor.PROCESSOR_NAME)
-        .addSink("Outgoing", topicsConfig.getString("outgoing"), new ByteArraySerializer(), new ByteArraySerializer(), new SourceKeyDefaultStreamPartitioner(), ScheduleProcessor.PROCESSOR_NAME);
+        //TODO set serializer for sink
+        .addSink("Outgoing", topicsConfig.getString("outgoing"), new SourceKeyDefaultStreamPartitioner() ,ScheduleProcessor.PROCESSOR_NAME);
 
     logger.debug("streams topology: {}", topology.describe());
   
