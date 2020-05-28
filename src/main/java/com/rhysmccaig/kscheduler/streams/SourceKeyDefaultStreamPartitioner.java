@@ -1,7 +1,5 @@
 package com.rhysmccaig.kscheduler.streams;
 
-import java.util.Map;
-
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;

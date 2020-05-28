@@ -25,6 +25,7 @@ import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.streams.ScheduleProcessor;
 import com.rhysmccaig.kscheduler.streams.SourceKeyDefaultStreamPartitioner;
+import com.rhysmccaig.kscheduler.streams.SourceToScheduledMapper;
 import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.router.RoutingStrategy;
@@ -34,7 +35,10 @@ import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
 
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
@@ -93,15 +97,22 @@ public class KScheduler {
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
     final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
-    // Streams component
+
     // TODO: Make names configurable
     StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
       Stores.persistentKeyValueStore(ScheduleProcessor.STATE_STORE_NAME),
         new ScheduledIdSerde(),
         new ScheduledRecordSerde())
       .withLoggingEnabled(Collections.emptyMap());
+    
+    // Streams component
+    var builder = new StreamsBuilder();
+    builder.stream(topicsConfig.getString("input"), Consumed.with(Serdes.ByteArray(), Serdes.ByteArray()))
+        .flatMap(new SourceToScheduledMapper(), Named.as("INPUT_MAPPER"));
+      
 
-    final Topology topology = new Topology()
+
+    final Topology topology = builder.build()
         .addSource("Scheduled", topicsConfig.getString("scheduled"))
         .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuate.interval")), "Scheduled")
         .addStateStore(storeBuilder, ScheduleProcessor.PROCESSOR_NAME)
