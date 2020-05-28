@@ -17,6 +17,7 @@ import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
 import com.rhysmccaig.kscheduler.router.Router;
+import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -35,7 +36,7 @@ public class DelayedConsumerRunner implements Callable<Void> {
   private static final Duration CONSUMER_POLL_DURATION = Duration.ofMillis(100);
 
   private final List<String> topics;
-  private final KafkaConsumer<ScheduledRecordMetadata, ScheduledRecord> consumer;
+  private final KafkaConsumer<byte[], byte[]> consumer;
   private final Router router;
   private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
@@ -58,8 +59,9 @@ public class DelayedConsumerRunner implements Callable<Void> {
       while (!shutdown.get()) {
         // Get and process records
         var records = consumer.poll(CONSUMER_POLL_DURATION);
-        for (ConsumerRecord<ScheduledRecordMetadata, ScheduledRecord> record : records) {
+        for (ConsumerRecord<byte[], byte[]> record : records) {
           var source = TopicPartitionOffset.fromConsumerRecord(record);
+          var metadata = HeaderUtils.extractMetadata(record.headers());
           if (paused.containsKey(source.topicPartition())) {
               // If this records partition was already paused in this batch, drop it - we will pick up later
             if (logger.isTraceEnabled()) {
@@ -79,7 +81,7 @@ public class DelayedConsumerRunner implements Callable<Void> {
                 logger.warn("Attempted to pause/seek an unassigned partition: ", pausePartition);
               }
             } else { // Otherwise we can attempt to route this message
-              var result = router.forward(record);
+              var result = router.forward(record, metadata);
               awaitingCommit.putIfAbsent(source.topicPartition(), List.of());
               awaitingCommit.get(source.topicPartition()).add(Map.entry(source.offset(), result));
             }

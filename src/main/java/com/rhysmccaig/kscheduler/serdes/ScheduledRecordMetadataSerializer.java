@@ -13,18 +13,23 @@ public class ScheduledRecordMetadataSerializer implements Serializer<ScheduledRe
   }
 
   public static byte[] toBytes(ScheduledRecordMetadata metadata) {
-    return toProto(metadata).toByteArray();
+    return (metadata == null) ? null : toProto(metadata).toByteArray();
   }
 
   public static Protos.ScheduledRecordMetadata toProto(ScheduledRecordMetadata metadata) {
+    if (metadata == null || metadata.scheduled() == null) {
+      return null;
+    }
     return Protos.ScheduledRecordMetadata.newBuilder()
         .setScheduled(Timestamp.newBuilder().setSeconds(metadata.scheduled().toEpochMilli()).setNanos(metadata.scheduled().getNano()))
-        .setId(metadata.id())
-        .setDestination(metadata.destination())
-        .setExpires(Timestamp.newBuilder().setSeconds(metadata.expires().toEpochMilli()).setNanos(metadata.expires().getNano()))
-        .setCreated(Timestamp.newBuilder().setSeconds(metadata.created().getEpochSecond()).setNanos(metadata.created().getNano()))
-        .setProduced(Timestamp.newBuilder().setSeconds(metadata.produced().getEpochSecond()).setNanos(metadata.produced().getNano()))
-        .setError(metadata.error())
+        .setId(metadata.id() == null ? null : metadata.id())
+        .setDestination(metadata.destination() == null ? null : metadata.destination())
+        .setExpires(metadata.expires() == null ? null :
+          Timestamp.newBuilder().setSeconds(metadata.expires().toEpochMilli()).setNanos(metadata.expires().getNano()))
+        .setCreated(metadata.created() == null ? null :
+          Timestamp.newBuilder().setSeconds(metadata.created().getEpochSecond()).setNanos(metadata.created().getNano()))
+        .setProduced(metadata.produced() == null ? null :
+          Timestamp.newBuilder().setSeconds(metadata.produced().getEpochSecond()).setNanos(metadata.produced().getNano()))
         .build();
   }
 

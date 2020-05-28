@@ -101,18 +101,6 @@ public final class Protos {
      * <code>.google.protobuf.Timestamp produced = 6;</code>
      */
     com.google.protobuf.TimestampOrBuilder getProducedOrBuilder();
-
-    /**
-     * <code>string error = 7;</code>
-     * @return The error.
-     */
-    java.lang.String getError();
-    /**
-     * <code>string error = 7;</code>
-     * @return The bytes for error.
-     */
-    com.google.protobuf.ByteString
-        getErrorBytes();
   }
   /**
    * Protobuf type {@code com.rhysmccaig.kscheduler.model.protos.ScheduledRecordMetadata}
@@ -129,7 +117,6 @@ public final class Protos {
     private ScheduledRecordMetadata() {
       id_ = "";
       destination_ = "";
-      error_ = "";
     }
 
     @java.lang.Override
@@ -224,12 +211,6 @@ public final class Protos {
                 produced_ = subBuilder.buildPartial();
               }
 
-              break;
-            }
-            case 58: {
-              java.lang.String s = input.readStringRequireUtf8();
-
-              error_ = s;
               break;
             }
             default: {
@@ -444,44 +425,6 @@ public final class Protos {
       return getProduced();
     }
 
-    public static final int ERROR_FIELD_NUMBER = 7;
-    private volatile java.lang.Object error_;
-    /**
-     * <code>string error = 7;</code>
-     * @return The error.
-     */
-    @java.lang.Override
-    public java.lang.String getError() {
-      java.lang.Object ref = error_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        error_ = s;
-        return s;
-      }
-    }
-    /**
-     * <code>string error = 7;</code>
-     * @return The bytes for error.
-     */
-    @java.lang.Override
-    public com.google.protobuf.ByteString
-        getErrorBytes() {
-      java.lang.Object ref = error_;
-      if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        error_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
-    }
-
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -514,9 +457,6 @@ public final class Protos {
       if (produced_ != null) {
         output.writeMessage(6, getProduced());
       }
-      if (!getErrorBytes().isEmpty()) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 7, error_);
-      }
       unknownFields.writeTo(output);
     }
 
@@ -547,9 +487,6 @@ public final class Protos {
       if (produced_ != null) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(6, getProduced());
-      }
-      if (!getErrorBytes().isEmpty()) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(7, error_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -590,8 +527,6 @@ public final class Protos {
         if (!getProduced()
             .equals(other.getProduced())) return false;
       }
-      if (!getError()
-          .equals(other.getError())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -623,8 +558,6 @@ public final class Protos {
         hash = (37 * hash) + PRODUCED_FIELD_NUMBER;
         hash = (53 * hash) + getProduced().hashCode();
       }
-      hash = (37 * hash) + ERROR_FIELD_NUMBER;
-      hash = (53 * hash) + getError().hashCode();
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -786,8 +719,6 @@ public final class Protos {
           produced_ = null;
           producedBuilder_ = null;
         }
-        error_ = "";
-
         return this;
       }
 
@@ -836,7 +767,6 @@ public final class Protos {
         } else {
           result.produced_ = producedBuilder_.build();
         }
-        result.error_ = error_;
         onBuilt();
         return result;
       }
@@ -904,10 +834,6 @@ public final class Protos {
         }
         if (other.hasProduced()) {
           mergeProduced(other.getProduced());
-        }
-        if (!other.getError().isEmpty()) {
-          error_ = other.error_;
-          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -1565,82 +1491,6 @@ public final class Protos {
         }
         return producedBuilder_;
       }
-
-      private java.lang.Object error_ = "";
-      /**
-       * <code>string error = 7;</code>
-       * @return The error.
-       */
-      public java.lang.String getError() {
-        java.lang.Object ref = error_;
-        if (!(ref instanceof java.lang.String)) {
-          com.google.protobuf.ByteString bs =
-              (com.google.protobuf.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          error_ = s;
-          return s;
-        } else {
-          return (java.lang.String) ref;
-        }
-      }
-      /**
-       * <code>string error = 7;</code>
-       * @return The bytes for error.
-       */
-      public com.google.protobuf.ByteString
-          getErrorBytes() {
-        java.lang.Object ref = error_;
-        if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          error_ = b;
-          return b;
-        } else {
-          return (com.google.protobuf.ByteString) ref;
-        }
-      }
-      /**
-       * <code>string error = 7;</code>
-       * @param value The error to set.
-       * @return This builder for chaining.
-       */
-      public Builder setError(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  
-        error_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>string error = 7;</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearError() {
-        
-        error_ = getDefaultInstance().getError();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>string error = 7;</code>
-       * @param value The bytes for error to set.
-       * @return This builder for chaining.
-       */
-      public Builder setErrorBytes(
-          com.google.protobuf.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  checkByteStringIsUtf8(value);
-        
-        error_ = value;
-        onChanged();
-        return this;
-      }
       @java.lang.Override
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
@@ -1724,6 +1574,30 @@ public final class Protos {
      * @return The value.
      */
     com.google.protobuf.ByteString getValue();
+
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    java.util.List<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader> 
+        getHeadersList();
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader getHeaders(int index);
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    int getHeadersCount();
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    java.util.List<? extends com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder> 
+        getHeadersOrBuilderList();
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder getHeadersOrBuilder(
+        int index);
   }
   /**
    * Protobuf type {@code com.rhysmccaig.kscheduler.model.protos.ScheduledRecord}
@@ -1740,6 +1614,7 @@ public final class Protos {
     private ScheduledRecord() {
       key_ = com.google.protobuf.ByteString.EMPTY;
       value_ = com.google.protobuf.ByteString.EMPTY;
+      headers_ = java.util.Collections.emptyList();
     }
 
     @java.lang.Override
@@ -1762,6 +1637,7 @@ public final class Protos {
       if (extensionRegistry == null) {
         throw new java.lang.NullPointerException();
       }
+      int mutable_bitField0_ = 0;
       com.google.protobuf.UnknownFieldSet.Builder unknownFields =
           com.google.protobuf.UnknownFieldSet.newBuilder();
       try {
@@ -1795,6 +1671,15 @@ public final class Protos {
               value_ = input.readBytes();
               break;
             }
+            case 34: {
+              if (!((mutable_bitField0_ & 0x00000001) != 0)) {
+                headers_ = new java.util.ArrayList<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader>();
+                mutable_bitField0_ |= 0x00000001;
+              }
+              headers_.add(
+                  input.readMessage(com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.parser(), extensionRegistry));
+              break;
+            }
             default: {
               if (!parseUnknownField(
                   input, unknownFields, extensionRegistry, tag)) {
@@ -1810,6 +1695,9 @@ public final class Protos {
         throw new com.google.protobuf.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
       } finally {
+        if (((mutable_bitField0_ & 0x00000001) != 0)) {
+          headers_ = java.util.Collections.unmodifiableList(headers_);
+        }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
@@ -1875,6 +1763,46 @@ public final class Protos {
       return value_;
     }
 
+    public static final int HEADERS_FIELD_NUMBER = 4;
+    private java.util.List<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader> headers_;
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    @java.lang.Override
+    public java.util.List<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader> getHeadersList() {
+      return headers_;
+    }
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    @java.lang.Override
+    public java.util.List<? extends com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder> 
+        getHeadersOrBuilderList() {
+      return headers_;
+    }
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    @java.lang.Override
+    public int getHeadersCount() {
+      return headers_.size();
+    }
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    @java.lang.Override
+    public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader getHeaders(int index) {
+      return headers_.get(index);
+    }
+    /**
+     * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+     */
+    @java.lang.Override
+    public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder getHeadersOrBuilder(
+        int index) {
+      return headers_.get(index);
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -1898,6 +1826,9 @@ public final class Protos {
       if (!value_.isEmpty()) {
         output.writeBytes(3, value_);
       }
+      for (int i = 0; i < headers_.size(); i++) {
+        output.writeMessage(4, headers_.get(i));
+      }
       unknownFields.writeTo(output);
     }
 
@@ -1918,6 +1849,10 @@ public final class Protos {
       if (!value_.isEmpty()) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(3, value_);
+      }
+      for (int i = 0; i < headers_.size(); i++) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(4, headers_.get(i));
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -1943,6 +1878,8 @@ public final class Protos {
           .equals(other.getKey())) return false;
       if (!getValue()
           .equals(other.getValue())) return false;
+      if (!getHeadersList()
+          .equals(other.getHeadersList())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -1962,6 +1899,10 @@ public final class Protos {
       hash = (53 * hash) + getKey().hashCode();
       hash = (37 * hash) + VALUE_FIELD_NUMBER;
       hash = (53 * hash) + getValue().hashCode();
+      if (getHeadersCount() > 0) {
+        hash = (37 * hash) + HEADERS_FIELD_NUMBER;
+        hash = (53 * hash) + getHeadersList().hashCode();
+      }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -2090,6 +2031,7 @@ public final class Protos {
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessageV3
                 .alwaysUseFieldBuilders) {
+          getHeadersFieldBuilder();
         }
       }
       @java.lang.Override
@@ -2105,6 +2047,12 @@ public final class Protos {
 
         value_ = com.google.protobuf.ByteString.EMPTY;
 
+        if (headersBuilder_ == null) {
+          headers_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000001);
+        } else {
+          headersBuilder_.clear();
+        }
         return this;
       }
 
@@ -2131,6 +2079,7 @@ public final class Protos {
       @java.lang.Override
       public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecord buildPartial() {
         com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecord result = new com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecord(this);
+        int from_bitField0_ = bitField0_;
         if (metadataBuilder_ == null) {
           result.metadata_ = metadata_;
         } else {
@@ -2138,6 +2087,15 @@ public final class Protos {
         }
         result.key_ = key_;
         result.value_ = value_;
+        if (headersBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) != 0)) {
+            headers_ = java.util.Collections.unmodifiableList(headers_);
+            bitField0_ = (bitField0_ & ~0x00000001);
+          }
+          result.headers_ = headers_;
+        } else {
+          result.headers_ = headersBuilder_.build();
+        }
         onBuilt();
         return result;
       }
@@ -2195,6 +2153,32 @@ public final class Protos {
         if (other.getValue() != com.google.protobuf.ByteString.EMPTY) {
           setValue(other.getValue());
         }
+        if (headersBuilder_ == null) {
+          if (!other.headers_.isEmpty()) {
+            if (headers_.isEmpty()) {
+              headers_ = other.headers_;
+              bitField0_ = (bitField0_ & ~0x00000001);
+            } else {
+              ensureHeadersIsMutable();
+              headers_.addAll(other.headers_);
+            }
+            onChanged();
+          }
+        } else {
+          if (!other.headers_.isEmpty()) {
+            if (headersBuilder_.isEmpty()) {
+              headersBuilder_.dispose();
+              headersBuilder_ = null;
+              headers_ = other.headers_;
+              bitField0_ = (bitField0_ & ~0x00000001);
+              headersBuilder_ = 
+                com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
+                   getHeadersFieldBuilder() : null;
+            } else {
+              headersBuilder_.addAllMessages(other.headers_);
+            }
+          }
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -2223,6 +2207,7 @@ public final class Protos {
         }
         return this;
       }
+      private int bitField0_;
 
       private com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordMetadata metadata_;
       private com.google.protobuf.SingleFieldBuilderV3<
@@ -2410,6 +2395,246 @@ public final class Protos {
         onChanged();
         return this;
       }
+
+      private java.util.List<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader> headers_ =
+        java.util.Collections.emptyList();
+      private void ensureHeadersIsMutable() {
+        if (!((bitField0_ & 0x00000001) != 0)) {
+          headers_ = new java.util.ArrayList<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader>(headers_);
+          bitField0_ |= 0x00000001;
+         }
+      }
+
+      private com.google.protobuf.RepeatedFieldBuilderV3<
+          com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder> headersBuilder_;
+
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public java.util.List<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader> getHeadersList() {
+        if (headersBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(headers_);
+        } else {
+          return headersBuilder_.getMessageList();
+        }
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public int getHeadersCount() {
+        if (headersBuilder_ == null) {
+          return headers_.size();
+        } else {
+          return headersBuilder_.getCount();
+        }
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader getHeaders(int index) {
+        if (headersBuilder_ == null) {
+          return headers_.get(index);
+        } else {
+          return headersBuilder_.getMessage(index);
+        }
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder setHeaders(
+          int index, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader value) {
+        if (headersBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureHeadersIsMutable();
+          headers_.set(index, value);
+          onChanged();
+        } else {
+          headersBuilder_.setMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder setHeaders(
+          int index, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder builderForValue) {
+        if (headersBuilder_ == null) {
+          ensureHeadersIsMutable();
+          headers_.set(index, builderForValue.build());
+          onChanged();
+        } else {
+          headersBuilder_.setMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder addHeaders(com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader value) {
+        if (headersBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureHeadersIsMutable();
+          headers_.add(value);
+          onChanged();
+        } else {
+          headersBuilder_.addMessage(value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder addHeaders(
+          int index, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader value) {
+        if (headersBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          ensureHeadersIsMutable();
+          headers_.add(index, value);
+          onChanged();
+        } else {
+          headersBuilder_.addMessage(index, value);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder addHeaders(
+          com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder builderForValue) {
+        if (headersBuilder_ == null) {
+          ensureHeadersIsMutable();
+          headers_.add(builderForValue.build());
+          onChanged();
+        } else {
+          headersBuilder_.addMessage(builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder addHeaders(
+          int index, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder builderForValue) {
+        if (headersBuilder_ == null) {
+          ensureHeadersIsMutable();
+          headers_.add(index, builderForValue.build());
+          onChanged();
+        } else {
+          headersBuilder_.addMessage(index, builderForValue.build());
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder addAllHeaders(
+          java.lang.Iterable<? extends com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader> values) {
+        if (headersBuilder_ == null) {
+          ensureHeadersIsMutable();
+          com.google.protobuf.AbstractMessageLite.Builder.addAll(
+              values, headers_);
+          onChanged();
+        } else {
+          headersBuilder_.addAllMessages(values);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder clearHeaders() {
+        if (headersBuilder_ == null) {
+          headers_ = java.util.Collections.emptyList();
+          bitField0_ = (bitField0_ & ~0x00000001);
+          onChanged();
+        } else {
+          headersBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public Builder removeHeaders(int index) {
+        if (headersBuilder_ == null) {
+          ensureHeadersIsMutable();
+          headers_.remove(index);
+          onChanged();
+        } else {
+          headersBuilder_.remove(index);
+        }
+        return this;
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder getHeadersBuilder(
+          int index) {
+        return getHeadersFieldBuilder().getBuilder(index);
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder getHeadersOrBuilder(
+          int index) {
+        if (headersBuilder_ == null) {
+          return headers_.get(index);  } else {
+          return headersBuilder_.getMessageOrBuilder(index);
+        }
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public java.util.List<? extends com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder> 
+           getHeadersOrBuilderList() {
+        if (headersBuilder_ != null) {
+          return headersBuilder_.getMessageOrBuilderList();
+        } else {
+          return java.util.Collections.unmodifiableList(headers_);
+        }
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder addHeadersBuilder() {
+        return getHeadersFieldBuilder().addBuilder(
+            com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder addHeadersBuilder(
+          int index) {
+        return getHeadersFieldBuilder().addBuilder(
+            index, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.getDefaultInstance());
+      }
+      /**
+       * <code>repeated .com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader headers = 4;</code>
+       */
+      public java.util.List<com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder> 
+           getHeadersBuilderList() {
+        return getHeadersFieldBuilder().getBuilderList();
+      }
+      private com.google.protobuf.RepeatedFieldBuilderV3<
+          com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder> 
+          getHeadersFieldBuilder() {
+        if (headersBuilder_ == null) {
+          headersBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
+              com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder>(
+                  headers_,
+                  ((bitField0_ & 0x00000001) != 0),
+                  getParentForChildren(),
+                  isClean());
+          headers_ = null;
+        }
+        return headersBuilder_;
+      }
       @java.lang.Override
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
@@ -2463,6 +2688,648 @@ public final class Protos {
 
   }
 
+  public interface ScheduledRecordHeaderOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>string key = 1;</code>
+     * @return The key.
+     */
+    java.lang.String getKey();
+    /**
+     * <code>string key = 1;</code>
+     * @return The bytes for key.
+     */
+    com.google.protobuf.ByteString
+        getKeyBytes();
+
+    /**
+     * <code>bytes value = 2;</code>
+     * @return The value.
+     */
+    com.google.protobuf.ByteString getValue();
+  }
+  /**
+   * Protobuf type {@code com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader}
+   */
+  public static final class ScheduledRecordHeader extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader)
+      ScheduledRecordHeaderOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use ScheduledRecordHeader.newBuilder() to construct.
+    private ScheduledRecordHeader(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private ScheduledRecordHeader() {
+      key_ = "";
+      value_ = com.google.protobuf.ByteString.EMPTY;
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new ScheduledRecordHeader();
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ScheduledRecordHeader(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              java.lang.String s = input.readStringRequireUtf8();
+
+              key_ = s;
+              break;
+            }
+            case 18: {
+
+              value_ = input.readBytes();
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new com.google.protobuf.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return com.rhysmccaig.kscheduler.model.protos.Protos.internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return com.rhysmccaig.kscheduler.model.protos.Protos.internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.class, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder.class);
+    }
+
+    public static final int KEY_FIELD_NUMBER = 1;
+    private volatile java.lang.Object key_;
+    /**
+     * <code>string key = 1;</code>
+     * @return The key.
+     */
+    @java.lang.Override
+    public java.lang.String getKey() {
+      java.lang.Object ref = key_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        key_ = s;
+        return s;
+      }
+    }
+    /**
+     * <code>string key = 1;</code>
+     * @return The bytes for key.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString
+        getKeyBytes() {
+      java.lang.Object ref = key_;
+      if (ref instanceof java.lang.String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        key_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+
+    public static final int VALUE_FIELD_NUMBER = 2;
+    private com.google.protobuf.ByteString value_;
+    /**
+     * <code>bytes value = 2;</code>
+     * @return The value.
+     */
+    @java.lang.Override
+    public com.google.protobuf.ByteString getValue() {
+      return value_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (!getKeyBytes().isEmpty()) {
+        com.google.protobuf.GeneratedMessageV3.writeString(output, 1, key_);
+      }
+      if (!value_.isEmpty()) {
+        output.writeBytes(2, value_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (!getKeyBytes().isEmpty()) {
+        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, key_);
+      }
+      if (!value_.isEmpty()) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(2, value_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader)) {
+        return super.equals(obj);
+      }
+      com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader other = (com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader) obj;
+
+      if (!getKey()
+          .equals(other.getKey())) return false;
+      if (!getValue()
+          .equals(other.getValue())) return false;
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + KEY_FIELD_NUMBER;
+      hash = (53 * hash) + getKey().hashCode();
+      hash = (37 * hash) + VALUE_FIELD_NUMBER;
+      hash = (53 * hash) + getValue().hashCode();
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader)
+        com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeaderOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return com.rhysmccaig.kscheduler.model.protos.Protos.internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return com.rhysmccaig.kscheduler.model.protos.Protos.internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.class, com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.Builder.class);
+      }
+
+      // Construct using com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        key_ = "";
+
+        value_ = com.google.protobuf.ByteString.EMPTY;
+
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return com.rhysmccaig.kscheduler.model.protos.Protos.internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_descriptor;
+      }
+
+      @java.lang.Override
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader getDefaultInstanceForType() {
+        return com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader build() {
+        com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader buildPartial() {
+        com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader result = new com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader(this);
+        result.key_ = key_;
+        result.value_ = value_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader) {
+          return mergeFrom((com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader other) {
+        if (other == com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader.getDefaultInstance()) return this;
+        if (!other.getKey().isEmpty()) {
+          key_ = other.key_;
+          onChanged();
+        }
+        if (other.getValue() != com.google.protobuf.ByteString.EMPTY) {
+          setValue(other.getValue());
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          parsedMessage = (com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private java.lang.Object key_ = "";
+      /**
+       * <code>string key = 1;</code>
+       * @return The key.
+       */
+      public java.lang.String getKey() {
+        java.lang.Object ref = key_;
+        if (!(ref instanceof java.lang.String)) {
+          com.google.protobuf.ByteString bs =
+              (com.google.protobuf.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          key_ = s;
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>string key = 1;</code>
+       * @return The bytes for key.
+       */
+      public com.google.protobuf.ByteString
+          getKeyBytes() {
+        java.lang.Object ref = key_;
+        if (ref instanceof String) {
+          com.google.protobuf.ByteString b = 
+              com.google.protobuf.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          key_ = b;
+          return b;
+        } else {
+          return (com.google.protobuf.ByteString) ref;
+        }
+      }
+      /**
+       * <code>string key = 1;</code>
+       * @param value The key to set.
+       * @return This builder for chaining.
+       */
+      public Builder setKey(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        key_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string key = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearKey() {
+        
+        key_ = getDefaultInstance().getKey();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>string key = 1;</code>
+       * @param value The bytes for key to set.
+       * @return This builder for chaining.
+       */
+      public Builder setKeyBytes(
+          com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  checkByteStringIsUtf8(value);
+        
+        key_ = value;
+        onChanged();
+        return this;
+      }
+
+      private com.google.protobuf.ByteString value_ = com.google.protobuf.ByteString.EMPTY;
+      /**
+       * <code>bytes value = 2;</code>
+       * @return The value.
+       */
+      @java.lang.Override
+      public com.google.protobuf.ByteString getValue() {
+        return value_;
+      }
+      /**
+       * <code>bytes value = 2;</code>
+       * @param value The value to set.
+       * @return This builder for chaining.
+       */
+      public Builder setValue(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
+        value_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>bytes value = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearValue() {
+        
+        value_ = getDefaultInstance().getValue();
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader)
+    }
+
+    // @@protoc_insertion_point(class_scope:com.rhysmccaig.kscheduler.model.protos.ScheduledRecordHeader)
+    private static final com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader();
+    }
+
+    public static com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<ScheduledRecordHeader>
+        PARSER = new com.google.protobuf.AbstractParser<ScheduledRecordHeader>() {
+      @java.lang.Override
+      public ScheduledRecordHeader parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        return new ScheduledRecordHeader(input, extensionRegistry);
+      }
+    };
+
+    public static com.google.protobuf.Parser<ScheduledRecordHeader> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<ScheduledRecordHeader> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordMetadata_descriptor;
   private static final 
@@ -2473,6 +3340,11 @@ public final class Protos {
   private static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecord_fieldAccessorTable;
+  private static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_descriptor;
+  private static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -2484,18 +3356,21 @@ public final class Protos {
     java.lang.String[] descriptorData = {
       "\n\025scheduledrecord.proto\022&com.rhysmccaig." +
       "kscheduler.model.protos\032\037google/protobuf" +
-      "/timestamp.proto\"\200\002\n\027ScheduledRecordMeta" +
+      "/timestamp.proto\"\361\001\n\027ScheduledRecordMeta" +
       "data\022-\n\tscheduled\030\001 \001(\0132\032.google.protobu" +
       "f.Timestamp\022\n\n\002id\030\002 \001(\t\022\023\n\013destination\030\003" +
       " \001(\t\022+\n\007expires\030\004 \001(\0132\032.google.protobuf." +
       "Timestamp\022+\n\007created\030\005 \001(\0132\032.google.prot" +
       "obuf.Timestamp\022,\n\010produced\030\006 \001(\0132\032.googl" +
-      "e.protobuf.Timestamp\022\r\n\005error\030\007 \001(\t\"\200\001\n\017" +
-      "ScheduledRecord\022Q\n\010metadata\030\001 \001(\0132?.com." +
-      "rhysmccaig.kscheduler.model.protos.Sched" +
-      "uledRecordMetadata\022\013\n\003key\030\002 \001(\014\022\r\n\005value" +
-      "\030\003 \001(\014B0\n&com.rhysmccaig.kscheduler.mode" +
-      "l.protosB\006Protosb\006proto3"
+      "e.protobuf.Timestamp\"\320\001\n\017ScheduledRecord" +
+      "\022Q\n\010metadata\030\001 \001(\0132?.com.rhysmccaig.ksch" +
+      "eduler.model.protos.ScheduledRecordMetad" +
+      "ata\022\013\n\003key\030\002 \001(\014\022\r\n\005value\030\003 \001(\014\022N\n\007heade" +
+      "rs\030\004 \003(\0132=.com.rhysmccaig.kscheduler.mod" +
+      "el.protos.ScheduledRecordHeader\"3\n\025Sched" +
+      "uledRecordHeader\022\013\n\003key\030\001 \001(\t\022\r\n\005value\030\002" +
+      " \001(\014B0\n&com.rhysmccaig.kscheduler.model." +
+      "protosB\006Protosb\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -2507,13 +3382,19 @@ public final class Protos {
     internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordMetadata_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordMetadata_descriptor,
-        new java.lang.String[] { "Scheduled", "Id", "Destination", "Expires", "Created", "Produced", "Error", });
+        new java.lang.String[] { "Scheduled", "Id", "Destination", "Expires", "Created", "Produced", });
     internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecord_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecord_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecord_descriptor,
-        new java.lang.String[] { "Metadata", "Key", "Value", });
+        new java.lang.String[] { "Metadata", "Key", "Value", "Headers", });
+    internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_descriptor =
+      getDescriptor().getMessageTypes().get(2);
+    internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_rhysmccaig_kscheduler_model_protos_ScheduledRecordHeader_descriptor,
+        new java.lang.String[] { "Key", "Value", });
     com.google.protobuf.TimestampProto.getDescriptor();
   }
 

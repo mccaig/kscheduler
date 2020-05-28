@@ -16,9 +16,10 @@ import org.apache.logging.log4j.Logger;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
+import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 
-public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, ScheduledRecord> {
+public class ScheduleProcessor implements Processor<byte[], byte[]> {
   static final Logger logger = LogManager.getLogger(ScheduleProcessor.class); 
 
   // How often we scan the records database for records that are ready to be forwarded.
@@ -73,8 +74,14 @@ public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, Sch
   /**
    * Add the record into the state store for processing
    */
-  public void process(ScheduledRecordMetadata key, ScheduledRecord value) {
-    this.kvStore.put(new ScheduledId(key.scheduled(), key.id()), value);
+  public void process(byte[] key, byte[] value) {
+    var headers = this.context.headers();
+    var metadata = HeaderUtils.extractMetadata(headers);
+    if (metadata != null && metadata.scheduled() != null && metadata.id() != null) {
+      var storeKey = new ScheduledId(metadata.scheduled(), metadata.id());
+      var storeValue = new ScheduledRecord(metadata, key, value, headers);
+      this.kvStore.put(storeKey, storeValue);
+    }
   }
 
   public void close() {

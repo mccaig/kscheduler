@@ -14,6 +14,7 @@ import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
+import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -35,11 +36,11 @@ public class Router {
   protected final Map<String, Duration> topicDelays;
   protected final String deadLetterTopic;
   protected final RoutingStrategy routingStrategy;
-  protected final KafkaProducer<ScheduledRecordMetadata, ScheduledRecord> producer;
+  protected final KafkaProducer<byte[], byte[]> producer;
   // TODO: Add config to know maximum schedule time
   // RouterConfig.[delayedTopics|deadLetterTopic|maximumDelay]?
 
-  public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<ScheduledRecordMetadata, ScheduledRecord> producer, RoutingStrategy defaultRoutingStrategy) {
+  public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<byte[], byte[]> producer, RoutingStrategy defaultRoutingStrategy) {
     this.delayedTopicsSet = delayedTopics.stream()
         .collect(Collectors.toCollection(() -> 
             new TreeSet<DelayedTopicConfig>((a, b) -> a.getDelay().compareTo(b.getDelay()))));
@@ -50,20 +51,24 @@ public class Router {
     this.producer = producer;
   }
 
-  public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<ScheduledRecordMetadata, ScheduledRecord>  producer) {
+  public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<byte[], byte[]>  producer) {
     this(delayedTopics, deadLetterTopic, producer, DEFAULT_ROUTING_STRATEGY);
   }
 
-  public Future<RecordMetadata> forward(ConsumerRecord<ScheduledRecordMetadata, ScheduledRecord> crecord) {
-    return forward(crecord, Instant.now());
+  public Future<RecordMetadata> forward(final ConsumerRecord<byte[], byte[]> record, ScheduledRecordMetadata metadata) {
+    return forward(record, metadata, Instant.now());
   }
 
-  public Future<RecordMetadata> forward(ConsumerRecord<ScheduledRecordMetadata, ScheduledRecord> crecord, Instant now) {
+  public Future<RecordMetadata> forward(final ConsumerRecord<byte[], byte[]> record, ScheduledRecordMetadata metadata, Instant now) {
     final Future<RecordMetadata> produceResult;
-    final var metadata = crecord.key();
-    final var record = crecord.value();
-    final var source = TopicPartitionOffset.fromConsumerRecord(crecord);
-    if (metadata.expires() != null && metadata.expires().isBefore(now)) {
+    final var source = TopicPartitionOffset.fromConsumerRecord(record);
+    if (metadata == null) {
+      var reason = new StringBuilder()
+          .append("No KScheduler metadata present")
+          .append(source)
+          .toString();
+      produceResult = drop(record, reason, now);
+    } else if (metadata.expires() != null && metadata.expires().isBefore(now)) {
       var reason = new StringBuilder()
           .append("expired record: ")
           .append(source)
@@ -72,38 +77,38 @@ public class Router {
     } else {
       // All clear, continue to route the event
       var nextTopic = routingStrategy.nextTopic(delayedTopicsSet, metadata, now);
-      produceResult = send(record, nextTopic, now);
+      produceResult = send(record, metadata, nextTopic, now);
     }
     return produceResult;
   }
 
-  public Future<RecordMetadata> drop(ScheduledRecord record, String reason) {
+  public Future<RecordMetadata> drop(final ConsumerRecord<byte[], byte[]> record, String reason) {
     return drop(record, reason, Instant.now());
   }
 
-  public Future<RecordMetadata> drop(ScheduledRecord record, String reason, Instant now) {
+  public Future<RecordMetadata> drop(final ConsumerRecord<byte[], byte[]> record, String reason, Instant now) {
     logger.info("dropping record: {}", reason);
     if (deadLetterTopic != null) {
-      record.metadata().setError(reason);
-      return send(record, deadLetterTopic, now);
+      HeaderUtils.addError(record.headers(), reason);
+      return send(record, null, deadLetterTopic, now);
     } else {
       return CompletableFuture.completedFuture(null);
     }
   }
 
-  public Future<RecordMetadata> send(ScheduledRecord record, String destination, Instant now) {
-    record.metadata().setProduced(now);
-    var key = record.metadata();
-    var value = record;
-    return producer.send(new ProducerRecord<ScheduledRecordMetadata, ScheduledRecord>(destination, null, null, key, value));
+  public Future<RecordMetadata> send(final ConsumerRecord<byte[], byte[]> record, ScheduledRecordMetadata metadata, String destination, Instant now) {
+    if (metadata != null) {
+      metadata.setProduced(now);
+    }
+    return producer.send(new ProducerRecord<byte[], byte[]>(destination, null, null, record.key(), record.value(), HeaderUtils.setMetadata(record.headers(), metadata)));
   }
 
-  public Instant processAt(ConsumerRecord<ScheduledRecordMetadata, ScheduledRecord> crecord) {
-    final var metadata = crecord.key();
-    final var source = TopicPartitionOffset.fromConsumerRecord(crecord);
+  public Instant processAt(final ConsumerRecord<byte[], byte[]> record) {
+    final var metadata = HeaderUtils.extractMetadata(record.headers());
+    final var source = TopicPartitionOffset.fromConsumerRecord(record);
     final var delay = topicDelays.get(source.topic());
     final Instant delayUntil;
-    if ((delay == null) || metadata.produced() == null) {
+    if ((delay == null) || metadata == null || metadata.produced() == null) {
       delayUntil = Instant.MIN;
     } else {
       delayUntil = metadata.produced().plus(delay);

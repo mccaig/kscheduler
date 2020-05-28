@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.InterruptException;
+import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +24,6 @@ import java.util.stream.Collectors;
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
-import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.streams.ScheduleProcessor;
 import com.rhysmccaig.kscheduler.streams.SourceKeyDefaultStreamPartitioner;
 import com.rhysmccaig.kscheduler.streams.SourceToScheduledMapper;
@@ -33,9 +34,9 @@ import com.rhysmccaig.kscheduler.serdes.ScheduledIdSerde;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerde;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
-
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Named;
@@ -57,8 +58,8 @@ public class KScheduler {
     final Duration consumerShutdownTimeout = scheduleConfig.getDuration("consumer.shutdown.timeout");
     final Duration producerShutdownTimeout = scheduleConfig.getDuration("producer.shutdown.timeout");
     final Duration streamsShutdownTimeout = scheduleConfig.getDuration("streams.shutdown.timeout");
-
-
+;
+Serdes.ByteArray().getClass().getName();
     Properties producerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("producer")));
     Properties consumerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("consumer")));
     Properties streamsProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("streams")));
@@ -78,7 +79,7 @@ public class KScheduler {
     final var dlqTopic = config.getIsNull("topics.dlq") ? null : config.getString("topics.dlq");
     
     // Set up the producer
-    final var producer = new KafkaProducer<ScheduledRecordMetadata, ScheduledRecord>(producerProps);
+    final var producer = new KafkaProducer<byte[], byte[]>(producerProps);
 
     // Set up a topic router
     final Config routerConfig = scheduleConfig.getConfig("router");
@@ -113,10 +114,10 @@ public class KScheduler {
 
 
     final Topology topology = builder.build()
-        .addSource("Scheduled", topicsConfig.getString("scheduled"))
+        .addSource("Scheduled", new ByteArrayDeserializer(), new ByteArrayDeserializer(), topicsConfig.getString("scheduled"))
         .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuate.interval")), "Scheduled")
         .addStateStore(storeBuilder, ScheduleProcessor.PROCESSOR_NAME)
-        .addSink("Outgoing", topicsConfig.getString("outgoing"), new SourceKeyDefaultStreamPartitioner() ,ScheduleProcessor.PROCESSOR_NAME);
+        .addSink("Outgoing", topicsConfig.getString("outgoing"), new ByteArraySerializer(), new ByteArraySerializer(), new SourceKeyDefaultStreamPartitioner(), ScheduleProcessor.PROCESSOR_NAME);
 
     logger.debug("streams topology: {}", topology.describe());
   

@@ -15,7 +15,7 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
     return (bytes == null) ? null : fromBytes(bytes);
   }
 
-  private static ScheduledRecordMetadata fromBytes(byte[] bytes) {
+  public static ScheduledRecordMetadata fromBytes(byte[] bytes) {
     Protos.ScheduledRecordMetadata proto;
     try {
       proto = Protos.ScheduledRecordMetadata.parseFrom(bytes);
@@ -26,14 +26,13 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
   }
 
   public static ScheduledRecordMetadata fromProto(Protos.ScheduledRecordMetadata proto) {
-    return (proto == null) ? null : new ScheduledRecordMetadata(
+    return (proto == null || proto.getScheduled() == null) ? null : new ScheduledRecordMetadata(
       Instant.ofEpochSecond(proto.getScheduled().getSeconds(), proto.getScheduled().getNanos()),
       proto.getId(), 
       proto.getDestination(), 
-      Instant.ofEpochSecond(proto.getExpires().getSeconds(), proto.getExpires().getNanos()), 
-      Instant.ofEpochSecond(proto.getCreated().getSeconds(), proto.getCreated().getNanos()),
-      Instant.ofEpochSecond(proto.getProduced().getSeconds(), proto.getProduced().getNanos()),
-      proto.getError());
+      (proto.getExpires() == null) ? null : Instant.ofEpochSecond(proto.getExpires().getSeconds(), proto.getExpires().getNanos()), 
+      (proto.getCreated() == null) ? null : Instant.ofEpochSecond(proto.getCreated().getSeconds(), proto.getCreated().getNanos()),
+      (proto.getProduced() == null) ? null : Instant.ofEpochSecond(proto.getProduced().getSeconds(), proto.getProduced().getNanos()));
   }
 
 }

@@ -1,8 +1,11 @@
 package com.rhysmccaig.kscheduler.serdes;
 
+import java.util.List;
+
 import com.google.protobuf.ByteString;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
+import com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader;
 
 import org.apache.kafka.common.serialization.Serializer;
 
@@ -17,10 +20,14 @@ public class ScheduledRecordSerializer implements Serializer<ScheduledRecord> {
   }
 
   private static Protos.ScheduledRecord toProto(ScheduledRecord record) {
+    List<Protos.ScheduledRecordHeader> headers = (record.headers() == null) ? List.of() : List.of(record.headers()).stream()
+        .map(h -> Protos.ScheduledRecordHeader.newBuilder()
+            .setKey(h.k))
     return Protos.ScheduledRecord.newBuilder()
         .setMetadata(ScheduledRecordMetadataSerializer.toProto(record.metadata()))
         .setKey(ByteString.copyFrom(record.key()))
         .setValue(ByteString.copyFrom(record.value()))
+        .addAllHeaders(headers)
         .build();
   }
 
