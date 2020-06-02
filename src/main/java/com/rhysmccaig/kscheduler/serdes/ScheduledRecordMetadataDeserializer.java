@@ -28,8 +28,8 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
   public static ScheduledRecordMetadata fromProto(Protos.ScheduledRecordMetadata proto) {
     return (proto == null || proto.getScheduled() == null) ? null : new ScheduledRecordMetadata(
       Instant.ofEpochSecond(proto.getScheduled().getSeconds(), proto.getScheduled().getNanos()),
-      proto.getId(), 
-      proto.getDestination(), 
+      proto.getDestination(),
+      proto.getId(),
       (proto.getExpires() == null) ? null : Instant.ofEpochSecond(proto.getExpires().getSeconds(), proto.getExpires().getNanos()), 
       (proto.getCreated() == null) ? null : Instant.ofEpochSecond(proto.getCreated().getSeconds(), proto.getCreated().getNanos()),
       (proto.getProduced() == null) ? null : Instant.ofEpochSecond(proto.getProduced().getSeconds(), proto.getProduced().getNanos()));

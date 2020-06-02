@@ -11,7 +11,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
-import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
@@ -37,8 +36,6 @@ public class Router {
   protected final String deadLetterTopic;
   protected final RoutingStrategy routingStrategy;
   protected final KafkaProducer<byte[], byte[]> producer;
-  // TODO: Add config to know maximum schedule time
-  // RouterConfig.[delayedTopics|deadLetterTopic|maximumDelay]?
 
   public Router(Collection<DelayedTopicConfig> delayedTopics, String deadLetterTopic, KafkaProducer<byte[], byte[]> producer, RoutingStrategy defaultRoutingStrategy) {
     this.delayedTopicsSet = delayedTopics.stream()
@@ -103,9 +100,7 @@ public class Router {
     return producer.send(new ProducerRecord<byte[], byte[]>(destination, null, null, record.key(), record.value(), HeaderUtils.setMetadata(record.headers(), metadata)));
   }
 
-  public Instant processAt(final ConsumerRecord<byte[], byte[]> record) {
-    final var metadata = HeaderUtils.extractMetadata(record.headers());
-    final var source = TopicPartitionOffset.fromConsumerRecord(record);
+  public Instant processAt(TopicPartitionOffset source, ScheduledRecordMetadata metadata) {
     final var delay = topicDelays.get(source.topic());
     final Instant delayUntil;
     if ((delay == null) || metadata == null || metadata.produced() == null) {

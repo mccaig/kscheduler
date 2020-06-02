@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -13,8 +14,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import com.rhysmccaig.kscheduler.model.ScheduledRecord;
-import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
@@ -38,18 +37,18 @@ public class DelayedConsumerRunner implements Callable<Void> {
   private final List<String> topics;
   private final KafkaConsumer<byte[], byte[]> consumer;
   private final Router router;
+  private final Duration maxmumScheduledDelay;
   private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
-  public DelayedConsumerRunner(Properties consumerProps, List<String> topics, Router router) {
+  public DelayedConsumerRunner(Properties consumerProps, List<String> topics, Router router, Duration maxmumScheduledDelay) {
     // We NEVER want to auto commit offsets
     consumerProps.setProperty("enable.auto.commit", "false");
     this.consumer = new KafkaConsumer<>(consumerProps);
     this.topics = topics;
     this.router = router;
-    logger.debug("Initialized with topics={}, router={}", topics, router);
+    this.maxmumScheduledDelay = maxmumScheduledDelay;
+    logger.debug("Initialized with topics={}, router={}, maximumScheduledDelay={}", topics, router, maxmumScheduledDelay);
   }
-
-
 
   public Void call() {
     try{
@@ -59,31 +58,40 @@ public class DelayedConsumerRunner implements Callable<Void> {
       while (!shutdown.get()) {
         // Get and process records
         var records = consumer.poll(CONSUMER_POLL_DURATION);
+        var now = Instant.now();
+        var delayLimit = Objects.isNull(maxmumScheduledDelay) ? null : now.plus(maxmumScheduledDelay);
         for (ConsumerRecord<byte[], byte[]> record : records) {
           var source = TopicPartitionOffset.fromConsumerRecord(record);
-          var metadata = HeaderUtils.extractMetadata(record.headers());
           if (paused.containsKey(source.topicPartition())) {
               // If this records partition was already paused in this batch, drop it - we will pick up later
             if (logger.isTraceEnabled()) {
               logger.trace("Skipping record from {}, as the partition is paused", source);
             }
           } else {
-            var delayUntil = router.processAt(record);
-            if (delayUntil.isAfter(Instant.now())) {
-              var pausePartition = source.topicPartition();
-              // The topic delay hasnt yet elapsed for this event, we need to pause this partition, and rewind
-              try {
-                paused.put(pausePartition, delayUntil);
-                consumer.pause(List.of(pausePartition));
-                consumer.seek(pausePartition, source.offset());
-              } catch (IllegalStateException ex) {
-                paused.remove(pausePartition);
-                logger.warn("Attempted to pause/seek an unassigned partition: ", pausePartition);
+            var metadata = HeaderUtils.extractMetadata(record.headers());
+            if (Objects.nonNull(delayLimit) && metadata.scheduled().isAfter(delayLimit)) {
+              router.drop(record, "record is scheduled too far in the future");
+            } else {
+              var delayUntil = router.processAt(source, metadata);
+              if (delayUntil.isAfter(Instant.now())) {
+                var pausePartition = source.topicPartition();
+                // The topic delay hasnt yet elapsed for this event, we need to pause this partition, and rewind
+                try {
+                  if (logger.isDebugEnabled()) {
+                    logger.debug("Pausing: {}, until {}", source, delayUntil);
+                  }
+                  paused.put(pausePartition, delayUntil);
+                  consumer.pause(List.of(pausePartition));
+                  consumer.seek(pausePartition, source.offset());
+                } catch (IllegalStateException ex) {
+                  paused.remove(pausePartition);
+                  logger.warn("Attempted to pause/seek an unassigned partition: ", pausePartition);
+                }
+              } else { // Otherwise we can attempt to route this message
+                var result = router.forward(record, metadata);
+                awaitingCommit.putIfAbsent(source.topicPartition(), List.of());
+                awaitingCommit.get(source.topicPartition()).add(Map.entry(source.offset(), result));
               }
-            } else { // Otherwise we can attempt to route this message
-              var result = router.forward(record, metadata);
-              awaitingCommit.putIfAbsent(source.topicPartition(), List.of());
-              awaitingCommit.get(source.topicPartition()).add(Map.entry(source.offset(), result));
             }
           }
         }

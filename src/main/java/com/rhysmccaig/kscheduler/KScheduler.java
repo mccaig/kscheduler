@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigFactory;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,25 +21,30 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.xml.crypto.dsig.Transform;
+
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.streams.ScheduleProcessor;
 import com.rhysmccaig.kscheduler.streams.SourceKeyDefaultStreamPartitioner;
-import com.rhysmccaig.kscheduler.streams.SourceToScheduledMapper;
+import com.rhysmccaig.kscheduler.streams.SourceToScheduledTransformer;
+import com.rhysmccaig.kscheduler.streams.ToOriginalRecordProcessor;
 import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.router.RoutingStrategy;
 import com.rhysmccaig.kscheduler.serdes.ScheduledIdSerde;
+import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerde;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerde;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
-import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Named;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.processor.TopicNameExtractor;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
@@ -49,14 +55,14 @@ public class KScheduler {
 
   public static void main(String[] args) {
     final Config config = ConfigFactory.load();
-    final Config scheduleConfig = config.getConfig("scheduler");
+    final Config schedulerConfig = config.getConfig("scheduler");
     final Config topicsConfig = config.getConfig("topics");
     final Config kafkaConfig = config.getConfig("kafka");
 
-    final Integer consumerThreads = scheduleConfig.getInt("consumer.threads");
-    final Duration consumerShutdownTimeout = scheduleConfig.getDuration("consumer.shutdown.timeout");
-    final Duration producerShutdownTimeout = scheduleConfig.getDuration("producer.shutdown.timeout");
-    final Duration streamsShutdownTimeout = scheduleConfig.getDuration("streams.shutdown.timeout");
+    final Integer consumerThreads = schedulerConfig.getInt("consumer.threads");
+    final Duration consumerShutdownTimeout = schedulerConfig.getDuration("consumer.shutdown.timeout");
+    final Duration producerShutdownTimeout = schedulerConfig.getDuration("producer.shutdown.timeout");
+    final Duration streamsShutdownTimeout = schedulerConfig.getDuration("streams.shutdown.timeout");
 ;
 Serdes.ByteArray().getClass().getName();
     Properties producerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("producer")));
@@ -72,8 +78,8 @@ Serdes.ByteArray().getClass().getName();
       return new DelayedTopicConfig(name, topic, delay);
     }).collect(Collectors.toList());
     
-    final var inputTopic = new DelayedTopicConfig("input", config.getString("topics.input"), Duration.ofSeconds(Long.MIN_VALUE));
-    delayedTopics.add(inputTopic);
+    final var scheduledTopicConfig = new DelayedTopicConfig("scheduled", config.getString("topics.scheduled"), Duration.ofSeconds(Long.MIN_VALUE));
+    delayedTopics.add(scheduledTopicConfig);
     
     final var dlqTopic = config.getIsNull("topics.dlq") ? null : config.getString("topics.dlq");
     
@@ -81,7 +87,7 @@ Serdes.ByteArray().getClass().getName();
     final var producer = new KafkaProducer<byte[], byte[]>(producerProps);
 
     // Set up a topic router
-    final Config routerConfig = scheduleConfig.getConfig("router");
+    final Config routerConfig = schedulerConfig.getConfig("router");
     final RoutingStrategy defaultRouterStrategy = new NotBeforeStrategy(routerConfig.getDuration("delay.grace.period"));
     final var topicRouter = new Router(delayedTopics, dlqTopic, producer, defaultRouterStrategy);
     // Set up a consumers
@@ -89,10 +95,11 @@ Serdes.ByteArray().getClass().getName();
     final var topics = delayedTopics.stream()
         .map(dt -> dt.getTopic())
         .collect(Collectors.toList());
+    final var maximumScheduledDelay = schedulerConfig.getDuration("maximum.delay");
     // Construct consumer runners - one for each desired thread
     final var consumerRunners = new ArrayList<DelayedConsumerRunner>(consumerThreads);
     for (var i = 0; i < consumerThreads; i++) {
-      consumerRunners.add(new DelayedConsumerRunner(consumerProps, topics, topicRouter));
+      consumerRunners.add(new DelayedConsumerRunner(consumerProps, topics, topicRouter, maximumScheduledDelay));
     }
     final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
     final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
@@ -106,22 +113,28 @@ Serdes.ByteArray().getClass().getName();
       .withLoggingEnabled(Collections.emptyMap());
     
     // Streams component
+
+    // If there are delayed topics, send input to scheduled topic, else send straight to scheduler
+    // TODO: Implement logic
+    var scheduledTopic = topicsConfig.getString("scheduled");
     var builder = new StreamsBuilder();
     builder.stream(topicsConfig.getString("input"), Consumed.with(Serdes.ByteArray(), Serdes.ByteArray()))
-        .flatMap(new SourceToScheduledMapper(), Named.as("INPUT_MAPPER"));
+        .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
+        .to(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde()));
       
-
-
     final Topology topology = builder.build()
-        .addSource("Scheduled", new ByteArrayDeserializer(), new ByteArrayDeserializer(), topicsConfig.getString("scheduled"))
-        .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(scheduleConfig.getDuration("punctuate.interval")), "Scheduled")
+        .addSource("Scheduler", new ByteArrayDeserializer(), new ByteArrayDeserializer(), topicsConfig.getString("scheduler"))
+        .addProcessor(ScheduleProcessor.PROCESSOR_NAME, () -> new ScheduleProcessor(schedulerConfig.getDuration("punctuate.interval")), "Scheduler")
         .addStateStore(storeBuilder, ScheduleProcessor.PROCESSOR_NAME)
-        //TODO set serializer for sink
-        .addSink("Outgoing", topicsConfig.getString("outgoing"), new SourceKeyDefaultStreamPartitioner() ,ScheduleProcessor.PROCESSOR_NAME);
+        .addProcessor("Original", () -> new ToOriginalRecordProcessor(), ScheduleProcessor.PROCESSOR_NAME)
+        .addSink("Outgoing", new TopicNameExtractor<K,V>() {
+        }, "Original");
+
 
     logger.debug("streams topology: {}", topology.describe());
   
     final KafkaStreams streams = new KafkaStreams(topology, streamsProps);
+
 
     streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
       System.exit(70);

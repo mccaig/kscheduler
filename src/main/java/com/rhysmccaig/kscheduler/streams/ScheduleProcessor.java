@@ -16,36 +16,49 @@ import org.apache.logging.log4j.Logger;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
+import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
+import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerializer;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 
-public class ScheduleProcessor implements Processor<byte[], byte[]> {
+public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, ScheduledRecord> {
   static final Logger logger = LogManager.getLogger(ScheduleProcessor.class); 
 
   // How often we scan the records database for records that are ready to be forwarded.
   public static final Duration DEFAULT_PUNCTUATE_INTERVAL = Duration.ofSeconds(5);
-  public static final String STATE_STORE_NAME = "kscheduler-scheduled";
+  public static final String DEFAULT_STATE_STORE_NAME = "kscheduler-scheduled";
   public static final String PROCESSOR_NAME = "kscheduler-processor";
 
+  private final String stateStoreName;
   private ProcessorContext context;
   private KeyValueStore<ScheduledId, ScheduledRecord> kvStore;
   private final Duration punctuateSchedule;
+  private final ScheduledRecordSerializer recordSerializer;
+  private final ScheduledRecordMetadataSerializer recordMetadataSerializer;
+
+  public ScheduleProcessor(String stateStoreName, Duration punctuateSchedule) {
+    Objects.requireNonNull(stateStoreName);
+    Objects.requireNonNull(punctuateSchedule);
+    this.stateStoreName = stateStoreName;
+    this.punctuateSchedule = punctuateSchedule;
+    this.recordSerializer = new ScheduledRecordSerializer();
+    this.recordMetadataSerializer = new ScheduledRecordMetadataSerializer();
+  }
 
   public ScheduleProcessor(Duration punctuateSchedule) {
-    Objects.requireNonNull(punctuateSchedule);
-    this.punctuateSchedule = punctuateSchedule;
+    this(DEFAULT_STATE_STORE_NAME, punctuateSchedule);
   }
 
   public ScheduleProcessor() {
-    this(DEFAULT_PUNCTUATE_INTERVAL);
+    this(DEFAULT_STATE_STORE_NAME, DEFAULT_PUNCTUATE_INTERVAL);
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public void init(ProcessorContext context) {
     this.context = context;
-    kvStore = (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(STATE_STORE_NAME);
-    // schedule a punctuate() method every second based on wall-clock time
+    kvStore = (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(DEFAULT_STATE_STORE_NAME);
+    // schedule a punctuate() based on wall-clock time
     this.context.schedule(punctuateSchedule, PunctuationType.WALL_CLOCK_TIME, (timestamp) -> {
       var notBeforeInstant = Instant.ofEpochMilli(timestamp);
       var beforeInstant = Instant.ofEpochMilli(timestamp).plus(punctuateSchedule);
@@ -56,36 +69,27 @@ public class ScheduleProcessor implements Processor<byte[], byte[]> {
       KeyValueIterator<ScheduledId, ScheduledRecord> iter = this.kvStore.range(from, to);
       while (iter.hasNext()) {
           KeyValue<ScheduledId, ScheduledRecord> entry = iter.next();
-          var key = entry.key;
           var value = entry.value;
-          assert (key.scheduled().isAfter(notBeforeInstant.minus(Duration.ofNanos(1))));
+          var key = value.metadata();
+          assert (entry.key.scheduled().isAfter(notBeforeInstant.minus(Duration.ofNanos(1))));
           assert (value.metadata().scheduled().isAfter(notBeforeInstant.minus(Duration.ofNanos(1))));
-          assert (key.scheduled().isBefore(beforeInstant));
+          assert (entry.key.scheduled().isBefore(beforeInstant));
           assert (value.metadata().scheduled().isBefore(beforeInstant));
-          context.forward(value.metadata(), value);
+          context.forward(key, value);
           this.kvStore.delete(entry.key);
       }
       iter.close();
-      // commit the current processing progress?
-      context.commit();
     });
   }
 
   /**
    * Add the record into the state store for processing
    */
-  public void process(byte[] key, byte[] value) {
-    var headers = this.context.headers();
-    var metadata = HeaderUtils.extractMetadata(headers);
-    if (metadata != null && metadata.scheduled() != null && metadata.id() != null) {
-      var storeKey = new ScheduledId(metadata.scheduled(), metadata.id());
-      var storeValue = new ScheduledRecord(metadata, key, value, headers);
-      this.kvStore.put(storeKey, storeValue);
-    }
+  public void process(ScheduledRecordMetadata key, ScheduledRecord value) {
+    var sid = new ScheduledId(key.scheduled(), key.id());
+    this.kvStore.put(sid, value);
   }
 
-  public void close() {
-
-  }
+  public void close() {}
 
 }

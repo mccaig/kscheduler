@@ -7,6 +7,7 @@ import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 
 public abstract class RoutingStrategy {
+
   /**
    * 
    * @param delayedTopics Must include at least one topic with a non negative delay. Behaviour is not defined if this is not the case.

@@ -1,26 +1,23 @@
 package com.rhysmccaig.kscheduler.model;
 
 import java.time.Instant;
-
-import org.apache.kafka.common.header.Headers;
-import org.apache.kafka.common.serialization.Serde;
+import java.util.Objects;
 
 public final class ScheduledRecordMetadata {
 
   private Instant scheduled;
-  private String id;
   private String destination;
+  private String id;
   private Instant created;
   private Instant expires;
   private Instant produced;
   
-  public ScheduledRecordMetadata(Instant scheduled, String id, String destination, Instant created, Instant expires, Instant produced) {
-    if (scheduled == null) {
-      throw new NullPointerException("scheduled must not be null");
-    }
+  public ScheduledRecordMetadata(Instant scheduled, String destination, String id, Instant created, Instant expires, Instant produced) {
+    Objects.requireNonNull(scheduled, "scheduled must not be null");
+    Objects.requireNonNull(destination, "destination must not be null");
     this.scheduled = scheduled;
-    this.id = id;
     this.destination = destination;
+    this.id = id;
     this.created = created;
     this.expires = expires;
     this.produced = produced;
