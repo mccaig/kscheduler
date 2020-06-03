@@ -26,11 +26,10 @@ import javax.xml.crypto.dsig.Transform;
 import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
-import com.rhysmccaig.kscheduler.streams.SchedulerTransformer;
+import com.rhysmccaig.kscheduler.streams.ScheduleProcessor;
 import com.rhysmccaig.kscheduler.streams.SourceKeyDefaultStreamPartitioner;
 import com.rhysmccaig.kscheduler.streams.SourceToScheduledTransformer;
-import com.rhysmccaig.kscheduler.streams.ScheduledDestinationTopicNameExtractor;
-import com.rhysmccaig.kscheduler.streams.ScheduledToSourceTransformer;
+import com.rhysmccaig.kscheduler.streams.ToOriginalRecordProcessor;
 import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
 import com.rhysmccaig.kscheduler.router.Router;
 import com.rhysmccaig.kscheduler.router.RoutingStrategy;
@@ -51,8 +50,8 @@ import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
 
 
-public class KScheduler {
-  static final Logger logger = LogManager.getLogger(KScheduler.class); 
+public class KSchedulerQueue {
+  static final Logger logger = LogManager.getLogger(KSchedulerQueue.class); 
 
   public static void main(String[] args) {
     final Config config = ConfigFactory.load();
@@ -66,6 +65,7 @@ public class KScheduler {
     final Duration streamsShutdownTimeout = schedulerConfig.getDuration("streams.shutdown.timeout");
 
     Properties producerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("producer")));
+    Properties consumerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("consumer")));
     Properties streamsProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("streams")));
 
     var delayedTopicsConfig = topicsConfig.getConfig("delayed");
@@ -76,60 +76,73 @@ public class KScheduler {
       var topic = delayedTopicConfig.hasPath("topic") ? delayedTopicConfig.getString("topic") : name;
       return new DelayedTopicConfig(name, topic, delay);
     }).collect(Collectors.toList());
-        
+    
+    final var scheduledTopicConfig = new DelayedTopicConfig("scheduled", config.getString("topics.scheduled"), Duration.ofSeconds(Long.MIN_VALUE));
+    delayedTopics.add(scheduledTopicConfig);
+    
     final var dlqTopic = config.getIsNull("topics.dlq") ? null : config.getString("topics.dlq");
+    
     // Set up the producer
     final var producer = new KafkaProducer<byte[], byte[]>(producerProps);
 
+    // Set up a topic router
+    final Config routerConfig = schedulerConfig.getConfig("router");
+    final RoutingStrategy defaultRouterStrategy = new NotBeforeStrategy(routerConfig.getDuration("delay.grace.period"));
+    final var topicRouter = new Router(delayedTopics, dlqTopic, producer, defaultRouterStrategy);
+    // Set up a consumers
+    // One consumer thread per input topic for now
+    final var topics = delayedTopics.stream()
+        .map(dt -> dt.getTopic())
+        .collect(Collectors.toList());
+    final var maximumScheduledDelay = schedulerConfig.getDuration("maximum.delay");
+    // Construct consumer runners - one for each desired thread
+    final var consumerRunners = new ArrayList<DelayedConsumerRunner>(consumerThreads);
+    for (var i = 0; i < consumerThreads; i++) {
+      consumerRunners.add(new DelayedConsumerRunner(consumerProps, topics, topicRouter, maximumScheduledDelay));
+    }
+    final var consumerExecutorService = Executors.newFixedThreadPool(consumerThreads);
+    final CompletionService<Void> consumerEcs = new ExecutorCompletionService<>(consumerExecutorService);
 
 
-    // Serdes
-    var metadataSerde = new ScheduledRecordMetadataSerde();
-    var scheduledSerde = new ScheduledRecordSerde();
-
-    StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
-      Stores.persistentKeyValueStore(SchedulerTransformer.DEFAULT_STATE_STORE_NAME),
-        new ScheduledIdSerde(),
-        new ScheduledRecordSerde())
-      .withLoggingEnabled(Collections.emptyMap());
-    
-    var scheduledTopic = topicsConfig.getString("scheduler");
-    var builder = new StreamsBuilder();
-    // Input topic
-    builder.stream(topicsConfig.getString("input"), Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
-        .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
-        .transform(() -> new SchedulerTransformer(schedulerConfig.getDuration("punctuate.interval")), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
-        .transform(() -> new ScheduledToSourceTransformer(), Named.as("SCHEDULED_TO_SOURCE"))
-        .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
-        //.to(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde()));
-      
-    final Topology topology = builder.build()
-        .addStateStore(storeBuilder, SchedulerTransformer.PROCESSOR_NAME);
-
-    logger.debug("streams topology: {}", topology.describe());
-    try {
-      Thread.sleep(10000);
-    } catch (Exception ex) {}
-    final KafkaStreams streams = new KafkaStreams(topology, streamsProps);
-
-    streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
-      System.exit(70);
-    });
     // Shutdown hook to clean up resources
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       logger.info("Executing cleanup as part of shutdown hook");
+      consumerRunners.forEach(consumer -> consumer.shutdown());
+      try {
+        if (!consumerExecutorService.awaitTermination(consumerShutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
+          consumerExecutorService.shutdownNow();
+        }
+      } catch (InterruptedException ex) {
+        logger.error("InterruptedException while waiting for ExecutorService to terminate.", ex);
+      }
       try {
         producer.close(producerShutdownTimeout);
       } catch (InterruptException ex) {
         logger.error("InterruptException while waiting for producer to close.", ex);
       }
       try {
-        streams.close(streamsShutdownTimeout);
       } catch (InterruptException ex) {
         logger.error("InterruptException while waiting for streams to close.", ex);
       }
     }));
+
+
     
+    // Run each consumer runner
+    consumerRunners.stream()
+        .forEach(consumer -> consumerEcs.submit(consumer));
+    
+    // Under ideal operating conditions, consumer threads should never return.
+    // If the thread was interrupted, then it will shut down cleanly, returing null
+    // In truly exceptional circumstances, the thread may throw an exception
+    // In either case we should interrupt the remaining threads and shutdown the app.
+    try {
+      consumerEcs.take().get();
+    } catch (Exception ex) {
+      logger.fatal("Caught unexpected and unrecoverable exception", ex);
+    }
+    logger.info("One or more consumer threads have halted, cleaning up and shutting down.");
+    System.exit(70);
   }
 
 }

@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.Processor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
@@ -21,8 +22,8 @@ import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerializer;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 
-public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, ScheduledRecord> {
-  static final Logger logger = LogManager.getLogger(ScheduleProcessor.class); 
+public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata, ScheduledRecord, KeyValue<ScheduledRecordMetadata, ScheduledRecord>> {
+  static final Logger logger = LogManager.getLogger(SchedulerTransformer.class); 
 
   // How often we scan the records database for records that are ready to be forwarded.
   public static final Duration DEFAULT_PUNCTUATE_INTERVAL = Duration.ofSeconds(5);
@@ -33,23 +34,19 @@ public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, Sch
   private ProcessorContext context;
   private KeyValueStore<ScheduledId, ScheduledRecord> kvStore;
   private final Duration punctuateSchedule;
-  private final ScheduledRecordSerializer recordSerializer;
-  private final ScheduledRecordMetadataSerializer recordMetadataSerializer;
 
-  public ScheduleProcessor(String stateStoreName, Duration punctuateSchedule) {
+  public SchedulerTransformer(String stateStoreName, Duration punctuateSchedule) {
     Objects.requireNonNull(stateStoreName);
     Objects.requireNonNull(punctuateSchedule);
     this.stateStoreName = stateStoreName;
     this.punctuateSchedule = punctuateSchedule;
-    this.recordSerializer = new ScheduledRecordSerializer();
-    this.recordMetadataSerializer = new ScheduledRecordMetadataSerializer();
   }
 
-  public ScheduleProcessor(Duration punctuateSchedule) {
+  public SchedulerTransformer(Duration punctuateSchedule) {
     this(DEFAULT_STATE_STORE_NAME, punctuateSchedule);
   }
 
-  public ScheduleProcessor() {
+  public SchedulerTransformer() {
     this(DEFAULT_STATE_STORE_NAME, DEFAULT_PUNCTUATE_INTERVAL);
   }
 
@@ -57,7 +54,7 @@ public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, Sch
   @SuppressWarnings("unchecked")
   public void init(ProcessorContext context) {
     this.context = context;
-    kvStore = (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(DEFAULT_STATE_STORE_NAME);
+    kvStore = (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(stateStoreName);
     // schedule a punctuate() based on wall-clock time
     this.context.schedule(punctuateSchedule, PunctuationType.WALL_CLOCK_TIME, (timestamp) -> {
       var notBeforeInstant = Instant.ofEpochMilli(timestamp);
@@ -85,9 +82,10 @@ public class ScheduleProcessor implements Processor<ScheduledRecordMetadata, Sch
   /**
    * Add the record into the state store for processing
    */
-  public void process(ScheduledRecordMetadata key, ScheduledRecord value) {
+  public KeyValue<ScheduledRecordMetadata, ScheduledRecord> transform(ScheduledRecordMetadata key, ScheduledRecord value) {
     var sid = new ScheduledId(key.scheduled(), key.id());
     this.kvStore.put(sid, value);
+    return null;
   }
 
   public void close() {}
