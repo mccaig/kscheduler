@@ -6,7 +6,6 @@ import java.util.Objects;
 
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
-import org.apache.kafka.streams.processor.Processor;
 import org.apache.kafka.streams.processor.ProcessorContext;
 import org.apache.kafka.streams.processor.PunctuationType;
 import org.apache.kafka.streams.state.KeyValueIterator;
@@ -17,10 +16,6 @@ import org.apache.logging.log4j.Logger;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerializer;
-import com.rhysmccaig.kscheduler.util.HeaderUtils;
-
 
 public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata, ScheduledRecord, KeyValue<ScheduledRecordMetadata, ScheduledRecord>> {
   static final Logger logger = LogManager.getLogger(SchedulerTransformer.class); 

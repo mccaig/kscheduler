@@ -4,38 +4,21 @@ import com.typesafe.config.ConfigFactory;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.InterruptException;
-import org.apache.kafka.common.serialization.ByteArrayDeserializer;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import javax.xml.crypto.dsig.Transform;
-
-import com.rhysmccaig.kscheduler.model.DelayedTopicConfig;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.streams.SchedulerTransformer;
-import com.rhysmccaig.kscheduler.streams.SourceKeyDefaultStreamPartitioner;
 import com.rhysmccaig.kscheduler.streams.SourceToScheduledTransformer;
 import com.rhysmccaig.kscheduler.streams.ScheduledDestinationTopicNameExtractor;
 import com.rhysmccaig.kscheduler.streams.ScheduledToSourceTransformer;
-import com.rhysmccaig.kscheduler.router.NotBeforeStrategy;
-import com.rhysmccaig.kscheduler.router.Router;
-import com.rhysmccaig.kscheduler.router.RoutingStrategy;
 import com.rhysmccaig.kscheduler.serdes.ScheduledIdSerde;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerde;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordSerde;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
@@ -45,7 +28,6 @@ import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.processor.TopicNameExtractor;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.kafka.streams.state.Stores;
@@ -60,32 +42,15 @@ public class KScheduler {
     final Config topicsConfig = config.getConfig("topics");
     final Config kafkaConfig = config.getConfig("kafka");
 
-    final Integer consumerThreads = schedulerConfig.getInt("consumer.threads");
-    final Duration consumerShutdownTimeout = schedulerConfig.getDuration("consumer.shutdown.timeout");
     final Duration producerShutdownTimeout = schedulerConfig.getDuration("producer.shutdown.timeout");
     final Duration streamsShutdownTimeout = schedulerConfig.getDuration("streams.shutdown.timeout");
 
     Properties producerProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("producer")));
     Properties streamsProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("streams")));
 
-    var delayedTopicsConfig = topicsConfig.getConfig("delayed");
-    var delayedTopicsNames = topicsConfig.getObject("delayed").keySet();
-    List<DelayedTopicConfig> delayedTopics = delayedTopicsNames.stream().map(name -> {
-      var delayedTopicConfig = delayedTopicsConfig.getConfig(name);
-      var delay = delayedTopicConfig.getDuration("delay");
-      var topic = delayedTopicConfig.hasPath("topic") ? delayedTopicConfig.getString("topic") : name;
-      return new DelayedTopicConfig(name, topic, delay);
-    }).collect(Collectors.toList());
-        
-    final var dlqTopic = config.getIsNull("topics.dlq") ? null : config.getString("topics.dlq");
     // Set up the producer
     final var producer = new KafkaProducer<byte[], byte[]>(producerProps);
 
-
-
-    // Serdes
-    var metadataSerde = new ScheduledRecordMetadataSerde();
-    var scheduledSerde = new ScheduledRecordSerde();
 
     StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
       Stores.persistentKeyValueStore(SchedulerTransformer.DEFAULT_STATE_STORE_NAME),
@@ -93,7 +58,7 @@ public class KScheduler {
         new ScheduledRecordSerde())
       .withLoggingEnabled(Collections.emptyMap());
     
-    var scheduledTopic = topicsConfig.getString("scheduler");
+    //var scheduledTopic = topicsConfig.getString("scheduler");
     var builder = new StreamsBuilder();
     // Input topic
     builder.stream(topicsConfig.getString("input"), Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
