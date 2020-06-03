@@ -68,8 +68,7 @@ public class KScheduler {
         .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
         //.to(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde()));
       
-    final Topology topology = builder.build()
-        .addStateStore(storeBuilder, SchedulerTransformer.PROCESSOR_NAME);
+    final Topology topology = builder.build();
 
     logger.debug("streams topology: {}", topology.describe());
     try {
