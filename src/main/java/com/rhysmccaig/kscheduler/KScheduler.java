@@ -60,8 +60,8 @@ public class KScheduler {
     
     //var scheduledTopic = topicsConfig.getString("scheduler");
     var builder = new StreamsBuilder();
-    // Input topic
-    builder.stream(topicsConfig.getString("input"), Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
+    builder.addStateStore(storeBuilder)
+        .stream(topicsConfig.getString("input"), Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
         .transform(() -> new SchedulerTransformer(schedulerConfig.getDuration("punctuate.interval")), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
         .transform(() -> new ScheduledToSourceTransformer(), Named.as("SCHEDULED_TO_SOURCE"))
