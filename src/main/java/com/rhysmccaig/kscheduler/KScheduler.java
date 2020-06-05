@@ -50,27 +50,12 @@ public class KScheduler {
 
     // Set up the producer
     final var producer = new KafkaProducer<byte[], byte[]>(producerProps);
-
-
-    StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
-      Stores.persistentKeyValueStore(SchedulerTransformer.DEFAULT_STATE_STORE_NAME),
-        new ScheduledIdSerde(),
-        new ScheduledRecordSerde())
-      .withLoggingEnabled(Collections.emptyMap());
-    
-    //var scheduledTopic = topicsConfig.getString("scheduler");
-    var builder = new StreamsBuilder();
-    builder.addStateStore(storeBuilder)
-        .stream(topicsConfig.getString("input"), Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
-        .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
-        .transform(() -> new SchedulerTransformer(schedulerConfig.getDuration("punctuate.interval")), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
-        .transform(() -> new ScheduledToSourceTransformer(), Named.as("SCHEDULED_TO_SOURCE"))
-        .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
-        //.to(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde()));
       
-    final Topology topology = builder.build();
+    final Topology topology = buildTopology(topicsConfig.getString("input"), schedulerConfig.getDuration("punctuate.interval"));
 
     logger.debug("streams topology: {}", topology.describe());
+
+    System.out.println(topology.describe());
     try {
       Thread.sleep(10000);
     } catch (Exception ex) {}
@@ -94,6 +79,24 @@ public class KScheduler {
       }
     }));
     
+  }
+
+
+  public static Topology buildTopology(String inputTopic, Duration punctuateInterval) {
+    StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder = Stores.keyValueStoreBuilder(
+      Stores.persistentKeyValueStore(SchedulerTransformer.DEFAULT_STATE_STORE_NAME),
+        new ScheduledIdSerde(),
+        new ScheduledRecordSerde())
+      .withLoggingEnabled(Collections.emptyMap());
+    
+    var builder = new StreamsBuilder();
+    builder.addStateStore(storeBuilder)
+        .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
+        .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
+        .transform(() -> new SchedulerTransformer(punctuateInterval), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
+        .transform(() -> new ScheduledToSourceTransformer(), Named.as("SCHEDULED_TO_SOURCE"))
+        .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
+    return builder.build();
   }
 
 }
