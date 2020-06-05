@@ -1,5 +1,7 @@
 package com.rhysmccaig.kscheduler.model;
 
+import java.util.Objects;
+
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 
@@ -48,6 +50,23 @@ public class TopicPartitionOffset {
         .append(offset)
         .append("]")
         .toString(); 
+  }
+
+  @Override
+  public int hashCode() {
+      return Objects.hash(topic, partition, offset);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof TopicPartitionOffset)) {
+        return false;
+    }
+    var co = (TopicPartitionOffset) o;
+    return Objects.equals(topic, co.topic)
+        && (partition == co.partition)
+        && (offset == co.offset);
   }
   
 }

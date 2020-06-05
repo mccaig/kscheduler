@@ -51,5 +51,26 @@ public final class ScheduledRecordMetadata {
     this.produced = produced;
   }
 
+
+  @Override
+  public int hashCode() {
+      return Objects.hash(scheduled, destination, id, created, expires, produced);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof ScheduledRecordMetadata)) {
+        return false;
+    }
+    var co = (ScheduledRecordMetadata) o;
+    return Objects.equals(scheduled, co.scheduled)
+        && Objects.equals(destination, co.destination)
+        && Objects.equals(id, co.id) 
+        && Objects.equals(created, co.created)
+        && Objects.equals(expires, co.expires)
+        && Objects.equals(produced, co.produced);
+  }
+
 }
 

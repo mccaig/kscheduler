@@ -1,6 +1,7 @@
 package com.rhysmccaig.kscheduler.model;
 
 import java.time.Instant;
+import java.util.Objects;
 
 public class ScheduledId {
 
@@ -24,7 +25,21 @@ public class ScheduledId {
     return id;
   }
 
+  @Override
+  public int hashCode() {
+      return Objects.hash(scheduled, id);
+  }
 
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof ScheduledId)) {
+        return false;
+    }
+    var co = (ScheduledId) o;
+    return Objects.equals(scheduled, co.scheduled)
+        && Objects.equals(id, co.id);
+  }
 
 
 }

@@ -1,6 +1,7 @@
 package com.rhysmccaig.kscheduler.model;
 
 import java.time.Duration;
+import java.util.Objects;
 
 public class DelayedTopicConfig {
     
@@ -32,5 +33,23 @@ public class DelayedTopicConfig {
             String.join("=", "topic", topic), 
             String.join("=", "delay", String.format("%s", delay.toSeconds())));
     }
+
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, topic, delay);
+  }
+
+@Override
+public boolean equals(Object o) {
+  if (o == this) return true;
+  if (!(o instanceof DelayedTopicConfig)) {
+      return false;
+  }
+  var co = (DelayedTopicConfig) o;
+  return Objects.equals(name, co.name)
+      && Objects.equals(topic, co.topic)
+      && Objects.equals(delay, co.delay);
+}
 
 }

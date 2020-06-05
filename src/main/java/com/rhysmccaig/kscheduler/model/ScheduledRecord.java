@@ -1,6 +1,8 @@
 package com.rhysmccaig.kscheduler.model;
 
 
+import java.util.Objects;
+
 import org.apache.kafka.common.header.Headers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,6 +39,24 @@ public class ScheduledRecord {
 
   public Headers headers() {
     return headers;
+  }
+
+  @Override
+  public int hashCode() {
+      return Objects.hash(metadata, key, value, headers);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof ScheduledRecord)) {
+        return false;
+    }
+    var co = (ScheduledRecord) o;
+    return Objects.equals(metadata, co.metadata)
+        && Objects.equals(key, co.key)
+        && Objects.equals(value, co.value) 
+        && Objects.equals(headers, co.headers);
   }
   
 }

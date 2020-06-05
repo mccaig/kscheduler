@@ -25,6 +25,7 @@ public class HeaderUtils {
     public final static String KSCHEDULER_PRODUCED_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Produced";
     public final static String KSCHEDULER_ERROR_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Error";
 
+    
     public static ScheduledRecordMetadata extractMetadata(Headers headers) {
         return extractMetadata(headers, false);
     }
@@ -38,7 +39,7 @@ public class HeaderUtils {
             } catch (SerializationException ex) {}
         }
         // Failed then fallback to individual headers
-        if (metadata == null) {
+        if (metadata == null || metadata.scheduled() == null ) {
             final var scheduled = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_SCHEDULED_HEADER_KEY));
             final var destinationHeader = headers.lastHeader(KSCHEDULER_DESTINATION_HEADER_KEY);
             final var destination = Objects.isNull(destinationHeader) ? null : new String(destinationHeader.value(), StandardCharsets.UTF_8);
