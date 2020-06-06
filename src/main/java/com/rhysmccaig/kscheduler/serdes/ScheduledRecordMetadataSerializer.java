@@ -21,11 +21,11 @@ public class ScheduledRecordMetadataSerializer implements Serializer<ScheduledRe
       return null;
     }
     return Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(metadata.scheduled().toEpochMilli()).setNanos(metadata.scheduled().getNano()))
+        .setScheduled(Timestamp.newBuilder().setSeconds(metadata.scheduled().getEpochSecond()).setNanos(metadata.scheduled().getNano()))
         .setId(metadata.id() == null ? null : metadata.id())
         .setDestination(metadata.destination() == null ? null : metadata.destination())
         .setExpires(metadata.expires() == null ? null :
-          Timestamp.newBuilder().setSeconds(metadata.expires().toEpochMilli()).setNanos(metadata.expires().getNano()))
+          Timestamp.newBuilder().setSeconds(metadata.expires().getEpochSecond()).setNanos(metadata.expires().getNano()))
         .setCreated(metadata.created() == null ? null :
           Timestamp.newBuilder().setSeconds(metadata.created().getEpochSecond()).setNanos(metadata.created().getNano()))
         .setProduced(metadata.produced() == null ? null :

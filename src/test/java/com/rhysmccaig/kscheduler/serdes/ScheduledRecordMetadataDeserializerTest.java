@@ -11,15 +11,13 @@ import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
 
 import org.apache.kafka.common.errors.SerializationException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ScheduledRecordMetadataDeserializerTest {
 
-  private ScheduledRecordMetadataDeserializer classUnderTest; 
-
   private ScheduledRecordMetadata srm;
-  private byte[] srmb;
   private Protos.ScheduledRecordMetadata srmp;
   private byte[] srmpb;
   private Instant scheduled;
@@ -35,7 +33,6 @@ public class ScheduledRecordMetadataDeserializerTest {
 
   @BeforeEach
   public void beforeEach() {
-    classUnderTest = new ScheduledRecordMetadataDeserializer();
     scheduled = Instant.now();
     destination = "destination.topic";
     id = "123456";
