@@ -1,5 +1,6 @@
 package com.rhysmccaig.kscheduler.serdes;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
@@ -46,6 +47,7 @@ public class ScheduledRecordMetadataSerializerTest {
         .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
         .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
         .build();
+    srmpb = srmp.toByteArray();
   }
 
   @Test
@@ -68,8 +70,84 @@ public class ScheduledRecordMetadataSerializerTest {
     assertEquals(srmp, toProto);
   }
 
+  @Test
+  public void toProto_no_created() {
+    srm = new ScheduledRecordMetadata(scheduled, destination, id, null, expires, produced);
+    srmp = Protos.ScheduledRecordMetadata.newBuilder()
+        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
+        .setDestination(destination)
+        .setId(id)
+        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
+        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
+        .build();
+    var toProto = ScheduledRecordMetadataSerializer.toProto(srm);
+    assertEquals(srmp, toProto);
+  }
 
+  @Test
+  public void toProto_no_expires() {
+    srm = new ScheduledRecordMetadata(scheduled, destination, id, created, null, produced);
+    srmp = Protos.ScheduledRecordMetadata.newBuilder()
+        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
+        .setDestination(destination)
+        .setId(id)
+        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
+        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
+        .build();
+    var toProto = ScheduledRecordMetadataSerializer.toProto(srm);
+    assertEquals(srmp, toProto);
+  }
 
+  @Test
+  public void toProto_no_produced() {
+    srm = new ScheduledRecordMetadata(scheduled, destination, id, created, expires, null);
+    srmp = Protos.ScheduledRecordMetadata.newBuilder()
+        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
+        .setDestination(destination)
+        .setId(id)
+        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
+        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
+        .build();
+    var toProto = ScheduledRecordMetadataSerializer.toProto(srm);
+    assertEquals(srmp, toProto);
+  }
+
+  @Test
+  public void toProto_null_returns_null() {
+    var toProto = ScheduledRecordMetadataSerializer.toProto(null);
+    assertEquals(null, toProto);
+  }
+
+  @Test
+  public void toBytes() {
+    srmpb = srmp.toByteArray();
+    var toBytes = ScheduledRecordMetadataSerializer.toBytes(srm);
+    assertArrayEquals(srmpb, toBytes);
+  }
+
+  @Test
+  public void toBytes_null_returns_null() {
+    var toBytes = ScheduledRecordMetadataSerializer.toBytes(null);
+    assertArrayEquals(null, toBytes);
+  }
+
+  @Test
+  public void serialize() {
+    byte[] toBytes = null;
+    try (var serializer = new ScheduledRecordMetadataSerializer()) {
+      toBytes = serializer.serialize(null, srm);
+    }
+    assertArrayEquals(srmpb, toBytes);
+  }
+
+  @Test
+  public void serialize_null_returns_null() {
+    byte[] toBytes = null;
+    try (var serializer = new ScheduledRecordMetadataSerializer()) {
+      toBytes = serializer.serialize(null, null);
+    }
+    assertArrayEquals(null, toBytes);
+  }
 
 
 

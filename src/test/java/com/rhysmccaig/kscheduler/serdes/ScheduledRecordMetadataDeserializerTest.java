@@ -113,8 +113,8 @@ public class ScheduledRecordMetadataDeserializerTest {
   }
 
   @Test
-  public void fromProto_null_throws() {
-    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(null));
+  public void fromProto_null_returns_null() {
+    assertEquals(null, ScheduledRecordMetadataDeserializer.fromProto(null));
   }
 
   @Test
@@ -155,9 +155,9 @@ public class ScheduledRecordMetadataDeserializerTest {
   }
 
   @Test
-  public void fromBytes_null_throws() {
+  public void fromBytes_null_returns_null() {
     srmpb = null;
-    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromBytes(srmpb));
+    assertEquals(null, ScheduledRecordMetadataDeserializer.fromBytes(srmpb));
   }
 
   @Test

@@ -17,6 +17,8 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
   }
 
   public static ScheduledRecordMetadata fromBytes(byte[] bytes) {
+    if (Objects.isNull(bytes))
+      return null;
     Protos.ScheduledRecordMetadata proto;
     try {
       proto = Protos.ScheduledRecordMetadata.parseFrom(bytes);
@@ -27,7 +29,9 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
   }
 
   public static ScheduledRecordMetadata fromProto(Protos.ScheduledRecordMetadata proto) {
-    if (proto == null || !proto.hasScheduled() || proto.getDestination().isEmpty()) {
+    if (Objects.isNull(proto))
+      return null;
+    if (!proto.hasScheduled() || proto.getDestination().isEmpty()) {
       throw new SerializationException();
     }
     return new ScheduledRecordMetadata(
