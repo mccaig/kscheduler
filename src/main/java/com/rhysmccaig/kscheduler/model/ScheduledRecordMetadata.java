@@ -72,5 +72,24 @@ public final class ScheduledRecordMetadata {
         && Objects.equals(produced, co.produced);
   }
 
+  @Override
+  public String toString() {
+    return new StringBuilder().append(ScheduledRecordMetadata.class.getSimpleName())
+      .append("{scheduled=")
+      .append(scheduled)
+      .append(", destination=")
+      .append(destination)
+      .append(", id=")
+      .append(id)
+      .append(", created=")
+      .append(created)
+      .append(", expires=")
+      .append(expires)
+      .append(", produced=")
+      .append(produced)
+      .append("}")
+      .toString();
+  }
+
 }
 
