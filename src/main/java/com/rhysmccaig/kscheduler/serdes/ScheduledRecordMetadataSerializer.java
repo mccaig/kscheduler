@@ -1,5 +1,7 @@
 package com.rhysmccaig.kscheduler.serdes;
 
+import java.util.Objects;
+
 import com.google.protobuf.Timestamp;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
@@ -17,20 +19,23 @@ public class ScheduledRecordMetadataSerializer implements Serializer<ScheduledRe
   }
 
   public static Protos.ScheduledRecordMetadata toProto(ScheduledRecordMetadata metadata) {
-    if (metadata == null || metadata.scheduled() == null) {
+    if (metadata == null) {
       return null;
     }
-    return Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(metadata.scheduled().getEpochSecond()).setNanos(metadata.scheduled().getNano()))
-        .setId(metadata.id() == null ? null : metadata.id())
-        .setDestination(metadata.destination() == null ? null : metadata.destination())
-        .setExpires(metadata.expires() == null ? null :
-          Timestamp.newBuilder().setSeconds(metadata.expires().getEpochSecond()).setNanos(metadata.expires().getNano()))
-        .setCreated(metadata.created() == null ? null :
-          Timestamp.newBuilder().setSeconds(metadata.created().getEpochSecond()).setNanos(metadata.created().getNano()))
-        .setProduced(metadata.produced() == null ? null :
-          Timestamp.newBuilder().setSeconds(metadata.produced().getEpochSecond()).setNanos(metadata.produced().getNano()))
-        .build();
+    var protoBuilder = Protos.ScheduledRecordMetadata.newBuilder();
+    if (Objects.nonNull(metadata.scheduled()))
+      protoBuilder.setScheduled(Timestamp.newBuilder().setSeconds(metadata.scheduled().getEpochSecond()).setNanos(metadata.scheduled().getNano()));
+    if (Objects.nonNull(metadata.id()))
+      protoBuilder.setId(metadata.id());
+    if (Objects.nonNull(metadata.destination()))
+      protoBuilder.setDestination(metadata.destination());
+    if (Objects.nonNull(metadata.expires()))
+      protoBuilder.setExpires(Timestamp.newBuilder().setSeconds(metadata.expires().getEpochSecond()).setNanos(metadata.expires().getNano()));
+    if (Objects.nonNull(metadata.created()))
+      protoBuilder.setCreated(Timestamp.newBuilder().setSeconds(metadata.created().getEpochSecond()).setNanos(metadata.created().getNano()));
+    if (Objects.nonNull(metadata.produced()))
+      protoBuilder.setProduced(Timestamp.newBuilder().setSeconds(metadata.produced().getEpochSecond()).setNanos(metadata.produced().getNano()));
+    return protoBuilder.build();
   }
 
 }
