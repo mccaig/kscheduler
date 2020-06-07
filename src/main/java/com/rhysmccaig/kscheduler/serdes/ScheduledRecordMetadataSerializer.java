@@ -14,14 +14,13 @@ public class ScheduledRecordMetadataSerializer implements Serializer<ScheduledRe
     return (data == null) ? null : toBytes(data);
   }
 
-  public static byte[] toBytes(ScheduledRecordMetadata metadata) {
+  private static byte[] toBytes(ScheduledRecordMetadata metadata) {
     return (metadata == null) ? null : toProto(metadata).toByteArray();
   }
 
-  public static Protos.ScheduledRecordMetadata toProto(ScheduledRecordMetadata metadata) {
-    if (metadata == null) {
+  protected static Protos.ScheduledRecordMetadata toProto(ScheduledRecordMetadata metadata) {
+    if (metadata == null)
       return null;
-    }
     var protoBuilder = Protos.ScheduledRecordMetadata.newBuilder();
     if (Objects.nonNull(metadata.scheduled()))
       protoBuilder.setScheduled(Timestamp.newBuilder().setSeconds(metadata.scheduled().getEpochSecond()).setNanos(metadata.scheduled().getNano()));

@@ -26,6 +26,7 @@ public class HeaderUtils {
     public final static String KSCHEDULER_ERROR_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Error";
 
     private final static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
+    private final static ScheduledRecordMetadataSerializer SERIALIZER = new ScheduledRecordMetadataSerializer();
 
     
     public static ScheduledRecordMetadata extractMetadata(Headers headers) {
@@ -72,7 +73,7 @@ public class HeaderUtils {
         }
         byte[] bytes;
         try {
-            bytes = ScheduledRecordMetadataSerializer.toBytes(metadata);
+            bytes = SERIALIZER.serialize(null, metadata);
         } catch (SerializationException ex) {
             return headers;
         }

@@ -119,19 +119,6 @@ public class ScheduledRecordMetadataSerializerTest {
   }
 
   @Test
-  public void toBytes() {
-    srmpb = srmp.toByteArray();
-    var toBytes = ScheduledRecordMetadataSerializer.toBytes(srm);
-    assertArrayEquals(srmpb, toBytes);
-  }
-
-  @Test
-  public void toBytes_null_returns_null() {
-    var toBytes = ScheduledRecordMetadataSerializer.toBytes(null);
-    assertArrayEquals(null, toBytes);
-  }
-
-  @Test
   public void serialize() {
     byte[] toBytes = null;
     try (var serializer = new ScheduledRecordMetadataSerializer()) {
