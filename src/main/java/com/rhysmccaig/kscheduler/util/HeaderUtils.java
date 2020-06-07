@@ -25,6 +25,8 @@ public class HeaderUtils {
     public final static String KSCHEDULER_PRODUCED_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Produced";
     public final static String KSCHEDULER_ERROR_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Error";
 
+    private final static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
+
     
     public static ScheduledRecordMetadata extractMetadata(Headers headers) {
         return extractMetadata(headers, false);
@@ -35,7 +37,7 @@ public class HeaderUtils {
         ScheduledRecordMetadata metadata = null;
         if (metadataHeader != null) {
             try {
-                metadata = ScheduledRecordMetadataDeserializer.fromBytes(metadataHeader.value());
+                metadata = DESERIALIZER.deserialize(null, metadataHeader.value());
             } catch (SerializationException ex) {}
         }
         // Failed then fallback to individual headers

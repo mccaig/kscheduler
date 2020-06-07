@@ -27,10 +27,6 @@ public class ScheduledRecordMetadataDeserializerTest {
   private Instant expires;
   private Instant produced;
 
-  // desserialize
-  // fromBytes
-  // fromProto
-
   @BeforeEach
   public void beforeEach() {
     scheduled = Instant.now();
@@ -145,31 +141,6 @@ public class ScheduledRecordMetadataDeserializerTest {
         .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
         .build();
         assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(srmp));
-  }
-
-  @Test
-  public void fromBytes() {
-    srmpb = srmp.toByteArray();
-    var fromBytes = ScheduledRecordMetadataDeserializer.fromBytes(srmpb);
-    assertEquals(srm, fromBytes);
-  }
-
-  @Test
-  public void fromBytes_null_returns_null() {
-    srmpb = null;
-    assertEquals(null, ScheduledRecordMetadataDeserializer.fromBytes(srmpb));
-  }
-
-  @Test
-  public void fromBytes_empty_throws() {
-    srmpb = new byte[0];
-    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromBytes(srmpb));
-  }
-
-  @Test
-  public void fromBytes_junk_throws() {
-    srmpb = new byte[] {0};
-    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromBytes(srmpb));
   }
 
   @Test

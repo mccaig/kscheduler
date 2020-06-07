@@ -28,13 +28,13 @@ public class ScheduledRecordDeserializer implements Deserializer<ScheduledRecord
     return fromProto(proto);
   }
 
-  public static ScheduledRecord fromProto(Protos.ScheduledRecord proto) {
+  private static ScheduledRecord fromProto(Protos.ScheduledRecord proto) {
     if (proto == null) {
       return null;
     }
     var metadata = ScheduledRecordMetadataDeserializer.fromProto(proto.getMetadata());
-    var key = proto.getKey().toByteArray();
-    var value = proto.getValue().toByteArray();
+    var key = proto.getKey().isEmpty() ? null : proto.getKey().toByteArray();
+    var value = proto.getValue().isEmpty() ? null : proto.getValue().toByteArray();
     var headersList = proto.getHeadersList().stream()
         .map(rh -> (Header) new RecordHeader(rh.getKey(), rh.getValue().toByteArray()))
         .collect(Collectors.toList());

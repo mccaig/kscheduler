@@ -16,7 +16,7 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
     return (bytes == null) ? null : fromBytes(bytes);
   }
 
-  public static ScheduledRecordMetadata fromBytes(byte[] bytes) {
+  private static ScheduledRecordMetadata fromBytes(byte[] bytes) {
     if (Objects.isNull(bytes))
       return null;
     Protos.ScheduledRecordMetadata proto;
