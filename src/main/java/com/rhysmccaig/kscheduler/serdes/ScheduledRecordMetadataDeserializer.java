@@ -28,7 +28,7 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
     return fromProto(proto);
   }
 
-  public static ScheduledRecordMetadata fromProto(Protos.ScheduledRecordMetadata proto) {
+  protected static ScheduledRecordMetadata fromProto(Protos.ScheduledRecordMetadata proto) {
     if (Objects.isNull(proto))
       return null;
     if (!proto.hasScheduled() || proto.getDestination().isEmpty()) {
