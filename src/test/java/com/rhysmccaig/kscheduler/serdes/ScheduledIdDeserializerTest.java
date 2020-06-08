@@ -6,13 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 
 import com.rhysmccaig.kscheduler.model.ScheduledId;
-import com.rhysmccaig.kscheduler.model.protos.Protos;
 
 import org.apache.kafka.common.errors.SerializationException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ScheduledIdDeserializerTest {
