@@ -29,7 +29,10 @@ public class ScheduledRecordSerializer implements Serializer<ScheduledRecord> {
     var it = record.headers().iterator();
     while (it.hasNext()) {
       var header = it.next();
-      builder.addHeaders(ScheduledRecordHeader.newBuilder().setKey(header.key()).setValue(ByteString.copyFrom(header.value())));
+      builder.addHeaders(
+          ScheduledRecordHeader.newBuilder()
+              .setKey(header.key())
+              .setValue(ByteString.copyFrom(header.value())));
     }
     return builder.build();
   }

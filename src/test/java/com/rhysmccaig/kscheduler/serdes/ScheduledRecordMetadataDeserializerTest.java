@@ -17,95 +17,77 @@ import org.junit.jupiter.api.Test;
 
 public class ScheduledRecordMetadataDeserializerTest {
 
-  private ScheduledRecordMetadata srm;
-  private Protos.ScheduledRecordMetadata srmp;
-  private byte[] srmpb;
-  private Instant scheduled;
-  private String destination;
-  private String id;
-  private Instant created;
-  private Instant expires;
-  private Instant produced;
+  private static Instant SCHEDULED = Instant.EPOCH;
+  private static String DESTINATION = "destination.topic";
+  private static String ID = "123456";
+  private static Instant CREATED = Instant.EPOCH.minus(Duration.ofDays(1));
+  private static Instant EXPIRES = Instant.EPOCH.plus(Duration.ofDays(1));
+  private static Instant PRODUCED = Instant.EPOCH.minus(Duration.ofSeconds(5));
+  private static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
+
+  private Protos.ScheduledRecordMetadata.Builder srmpBuilder;
 
   @BeforeEach
   public void beforeEach() {
-    scheduled = Instant.now();
-    destination = "destination.topic";
-    id = "123456";
-    created = scheduled.minus(Duration.ofDays(1));
-    expires = scheduled.plus(Duration.ofDays(1));
-    produced = scheduled.minus(Duration.ofSeconds(5));
-    srm = new ScheduledRecordMetadata(scheduled, destination, id, created, expires, produced);
-    srmp = Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
-        .setDestination(destination)
-        .setId(id)
-        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
-        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
-        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
-        .build();
+    srmpBuilder = Protos.ScheduledRecordMetadata.newBuilder()
+        .setScheduled(Timestamp.newBuilder().setSeconds(SCHEDULED.getEpochSecond()).setNanos(SCHEDULED.getNano()))
+        .setDestination(DESTINATION)
+        .setId(ID)
+        .setCreated(Timestamp.newBuilder().setSeconds(CREATED.getEpochSecond()).setNanos(CREATED.getNano()))
+        .setExpires(Timestamp.newBuilder().setSeconds(EXPIRES.getEpochSecond()).setNanos(EXPIRES.getNano()))
+        .setProduced(Timestamp.newBuilder().setSeconds(PRODUCED.getEpochSecond()).setNanos(PRODUCED.getNano()));
   }
 
   @Test
   public void fromProto() {
-    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(srmp);
-    assertEquals(srm, fromProto);
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, CREATED, EXPIRES, PRODUCED);
+    var proto = srmpBuilder.build();
+    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(proto);
+    assertEquals(expected, fromProto);
   }
 
   @Test
   public void fromProto_no_id() {
-    srm = new ScheduledRecordMetadata(scheduled, destination, null, created, expires, produced);
-    srmp = Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
-        .setDestination(destination)
-        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
-        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
-        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
-        .build();
-    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(srmp);
-    assertEquals(srm, fromProto);
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, null, CREATED, EXPIRES, PRODUCED);
+    var proto = srmpBuilder.clearId().build();
+    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(proto);
+    assertEquals(expected, fromProto);
   }
 
   @Test
   public void fromProto_no_created() {
-    srm = new ScheduledRecordMetadata(scheduled, destination, id, null, expires, produced);
-    srmp = Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
-        .setDestination(destination)
-        .setId(id)
-        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
-        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
-        .build();
-    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(srmp);
-    assertEquals(srm, fromProto);
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, null, EXPIRES, PRODUCED);
+    var proto = srmpBuilder.clearCreated().build();
+    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(proto);
+    assertEquals(expected, fromProto);
   }
 
   @Test
   public void fromProto_no_expires() {
-    srm = new ScheduledRecordMetadata(scheduled, destination, id, created, null, produced);
-    srmp = Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
-        .setDestination(destination)
-        .setId(id)
-        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
-        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
-        .build();
-    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(srmp);
-    assertEquals(srm, fromProto);
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, CREATED, null, PRODUCED);
+    var proto = srmpBuilder.clearExpires().build();
+    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(proto);
+    assertEquals(expected, fromProto);
   }
 
   @Test
   public void fromProto_no_produced() {
-    srm = new ScheduledRecordMetadata(scheduled, destination, id, created, expires, null);
-    srmp = Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
-        .setDestination(destination)
-        .setId(id)
-        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
-        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
-        .build();
-    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(srmp);
-    assertEquals(srm, fromProto);
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, CREATED, EXPIRES, null);
+    var proto = srmpBuilder.clearProduced().build();
+    var fromProto = ScheduledRecordMetadataDeserializer.fromProto(proto);
+    assertEquals(expected, fromProto);
+  }
+
+  @Test
+  public void fromProto_no_scheduled_throws() {
+    var proto = srmpBuilder.clearScheduled().build();
+    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(proto));
+  }
+
+  @Test
+  public void fromProto_no_destination_throws() {
+    var proto = srmpBuilder.clearDestination().build();
+    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(proto));
   }
 
   @Test
@@ -115,65 +97,77 @@ public class ScheduledRecordMetadataDeserializerTest {
 
   @Test
   public void fromProto_no_fields_throws() {
-    srmp = Protos.ScheduledRecordMetadata.getDefaultInstance();
-    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(srmp));
-  }
-
-  @Test
-  public void fromProto_no_scheduled_throws() {
-    srmp = Protos.ScheduledRecordMetadata.newBuilder()
-        .setDestination(destination)
-        .setId(id)
-        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
-        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
-        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
-        .build();
-        assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(srmp));
-  }
-
-  @Test
-  public void fromProto_no_destination_throws() {
-    srmp = Protos.ScheduledRecordMetadata.newBuilder()
-        .setScheduled(Timestamp.newBuilder().setSeconds(scheduled.getEpochSecond()).setNanos(scheduled.getNano()))
-        .setId(id)
-        .setCreated(Timestamp.newBuilder().setSeconds(created.getEpochSecond()).setNanos(created.getNano()))
-        .setExpires(Timestamp.newBuilder().setSeconds(expires.getEpochSecond()).setNanos(expires.getNano()))
-        .setProduced(Timestamp.newBuilder().setSeconds(produced.getEpochSecond()).setNanos(produced.getNano()))
-        .build();
-        assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(srmp));
+    var proto = Protos.ScheduledRecordMetadata.getDefaultInstance();
+    assertThrows(SerializationException.class, () -> ScheduledRecordMetadataDeserializer.fromProto(proto));
   }
 
   @Test
   public void desserialize() {
-    srmpb = srmp.toByteArray();
-    ScheduledRecordMetadata fromBytes;
-    try (var deserializer = new ScheduledRecordMetadataDeserializer()) {
-      fromBytes = deserializer.deserialize(null, srmpb);
-    }
-    assertEquals(srm, fromBytes);
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, CREATED, EXPIRES, PRODUCED);
+    var bytes = srmpBuilder.build().toByteArray();
+    var fromBytes = DESERIALIZER.deserialize(null, bytes);
+    assertEquals(expected, fromBytes);
+  }
+
+  @Test
+  public void desserialize_no_id() {
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, null, CREATED, EXPIRES, PRODUCED);
+    var bytes = srmpBuilder.clearId().build().toByteArray();
+    var fromBytes = DESERIALIZER.deserialize(null, bytes);
+    assertEquals(expected, fromBytes);
+  }
+
+  @Test
+  public void desserialize_no_created() {
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, null, EXPIRES, PRODUCED);
+    var bytes = srmpBuilder.clearCreated().build().toByteArray();
+    var fromBytes = DESERIALIZER.deserialize(null, bytes);
+    assertEquals(expected, fromBytes);
+  }
+
+  @Test
+  public void desserialize_no_expires() {
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, CREATED, null, PRODUCED);
+    var bytes = srmpBuilder.clearExpires().build().toByteArray();
+    var fromBytes = DESERIALIZER.deserialize(null, bytes);
+    assertEquals(expected, fromBytes);
+  }
+
+  @Test
+  public void desserialize_no_produced() {
+    var expected = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, CREATED, EXPIRES, null);
+    var bytes = srmpBuilder.clearProduced().build().toByteArray();
+    var fromBytes = DESERIALIZER.deserialize(null, bytes);
+    assertEquals(expected, fromBytes);
+  }
+
+  @Test
+  public void desserialize_no_scheduled_throws() {
+    var bytes = srmpBuilder.clearScheduled().build().toByteArray();
+    assertThrows(SerializationException.class, () -> DESERIALIZER.deserialize(null, bytes));
+  }
+
+  @Test
+  public void desserialize_no_destination_throws() {
+    var bytes = srmpBuilder.clearDestination().build().toByteArray();
+    assertThrows(SerializationException.class, () -> DESERIALIZER.deserialize(null, bytes));
   }
 
   @Test
   public void desserialize_null_returns_null() {
-    ScheduledRecordMetadata fromBytes;
-    try (var deserializer = new ScheduledRecordMetadataDeserializer()) {
-      fromBytes = deserializer.deserialize(null, null);
-    }
+    var fromBytes = DESERIALIZER.deserialize(null, null);
     assertEquals(null, fromBytes);
   }
 
   @Test
   public void desserialize_empty_throws() {
-    try (var deserializer = new ScheduledRecordMetadataDeserializer()) {
-      assertThrows(SerializationException.class, () -> deserializer.deserialize(null, new byte[0]));
-    }
+    var bytes = new byte[0];
+    assertThrows(SerializationException.class, () -> DESERIALIZER.deserialize(null, bytes));
   }
 
   @Test
   public void desserialize_junk_throws() {
-    try (var deserializer = new ScheduledRecordMetadataDeserializer()) {
-      assertThrows(SerializationException.class, () -> deserializer.deserialize(null, new byte[] {0}));
-    }
+    assertThrows(SerializationException.class, () -> DESERIALIZER.deserialize(null, new byte[] {0}));
   }
 
 
