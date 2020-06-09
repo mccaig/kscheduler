@@ -31,10 +31,8 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   private final Duration punctuateSchedule;
 
   public SchedulerTransformer(String stateStoreName, Duration punctuateSchedule) {
-    Objects.requireNonNull(stateStoreName);
-    Objects.requireNonNull(punctuateSchedule);
-    this.stateStoreName = stateStoreName;
-    this.punctuateSchedule = punctuateSchedule;
+    this.stateStoreName = Objects.requireNonNull(stateStoreName);
+    this.punctuateSchedule = Objects.requireNonNull(punctuateSchedule);
   }
 
   public SchedulerTransformer(Duration punctuateSchedule) {

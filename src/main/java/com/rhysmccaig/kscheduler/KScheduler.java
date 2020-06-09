@@ -2,12 +2,13 @@ package com.rhysmccaig.kscheduler;
 
 import com.typesafe.config.ConfigFactory;
 
-import org.apache.kafka.clients.producer.KafkaProducer;
+//import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.errors.InterruptException;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
@@ -93,7 +94,7 @@ public class KScheduler {
         new ScheduledRecordSerde())
       .withLoggingEnabled(Collections.emptyMap());
   }
-
+  
   public static Topology getTopology(
       String inputTopic, 
       Duration punctuateInterval,
