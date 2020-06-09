@@ -1,7 +1,5 @@
 package com.rhysmccaig.kscheduler.serdes;
 
-import java.util.stream.Collectors;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
