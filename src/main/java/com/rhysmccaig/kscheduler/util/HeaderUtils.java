@@ -2,6 +2,7 @@ package com.rhysmccaig.kscheduler.util;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -91,7 +92,7 @@ public class HeaderUtils {
         if (Objects.nonNull(header)) {
             try {
                 instant = Instant.parse(new String(header.value(), StandardCharsets.UTF_8));
-            } catch (NumberFormatException ex) {}
+            } catch (DateTimeParseException ex) {}
         }
         return instant;
     }

@@ -12,6 +12,7 @@ import java.util.Properties;
 
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
+import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
@@ -65,7 +66,7 @@ public class KSchedulerTest {
     var testRecord = new TestRecord<String, String>(
         "Hello", 
         "World", 
-        new RecordHeaders().add(new RecordHeader("Key", "value".getBytes(StandardCharsets.UTF_8))),
+        new RecordHeaders().add(new RecordHeader("key", "value".getBytes(StandardCharsets.UTF_8))),
         Instant.now(clock));
     inputTopic.pipeInput(testRecord);
     assertFalse(kvStore.all().hasNext());   
