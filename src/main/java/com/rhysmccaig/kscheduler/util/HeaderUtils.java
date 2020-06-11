@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
-import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataDeserializer;
@@ -13,6 +12,7 @@ import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.Headers;
+import org.apache.kafka.common.header.internals.RecordHeaders;
 
 public class HeaderUtils {
     
@@ -49,11 +49,11 @@ public class HeaderUtils {
             final var destination = Objects.isNull(destinationHeader) ? null : new String(destinationHeader.value(), StandardCharsets.UTF_8);
             if (Objects.nonNull(scheduled) && Objects.nonNull(destination)) {
                 final var idHeader = headers.lastHeader(KSCHEDULER_ID_HEADER_KEY);
-                final String id = Objects.isNull(idHeader) ? UUID.randomUUID().toString() : new String(idHeader.value(), StandardCharsets.UTF_8);
+                final String id = Objects.isNull(idHeader) ? null : new String(idHeader.value(), StandardCharsets.UTF_8);
                 final var created = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_CREATED_HEADER_KEY));
                 final var expires = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_EXPIRES_HEADER_KEY));
                 final var produced = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_PRODUCED_HEADER_KEY));
-                metadata = new ScheduledRecordMetadata(scheduled, id, destination, created, expires, produced);
+                metadata = new ScheduledRecordMetadata(scheduled, destination, id, created, expires, produced);
             }
         }
         if (Objects.nonNull(remove) && remove) {
@@ -69,7 +69,11 @@ public class HeaderUtils {
     }
 
     public static Headers setMetadata(Headers headers, ScheduledRecordMetadata metadata) {
-        if (metadata == null) {
+        if (Objects.isNull(headers)) {
+            headers = new RecordHeaders();
+        }
+        headers.remove(KSCHEDULER_METADATA_HEADER_KEY);
+        if (Objects.isNull(metadata)) {
             return headers;
         }
         byte[] bytes;
@@ -78,7 +82,9 @@ public class HeaderUtils {
         } catch (SerializationException ex) {
             return headers;
         }
-        headers.remove(KSCHEDULER_METADATA_HEADER_KEY);
+        if (Objects.isNull(headers)) {
+            headers = new RecordHeaders();
+        }
         headers.add(KSCHEDULER_METADATA_HEADER_KEY, bytes);
         return headers;
     }
