@@ -1,5 +1,6 @@
 package com.rhysmccaig.kscheduler.serdes;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -12,29 +13,32 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 public class ScheduledIdDeserializer implements Deserializer<ScheduledId> {
     
-  private static final String DELIMITER = "~";
+  private static int INSTANT_SIZE = Long.BYTES + Integer.BYTES;
 
   public ScheduledId deserialize(String topic, byte[] bytes) {
-    ScheduledId scheduledId = null;
-    if (Objects.nonNull(bytes)) {
-      var str = new String(bytes, StandardCharsets.UTF_8);
-      var tokens = str.split(DELIMITER);
-      if (tokens.length < 2)
-        throw new SerializationException("less than 2 tokens in bytes string");
-      if (tokens.length > 3)
-        throw new SerializationException("more than 3 tokens in bytes string");
-      try {
-        var seconds = Long.parseLong(tokens[0]);
-        var nanos = Integer.parseInt(tokens[1]);
-        String id = null;
-        if (tokens.length == 3) {
-          id = tokens[2];
-        }
-        var scheduled = Instant.ofEpochSecond(seconds, nanos);
-        scheduledId = new ScheduledId(scheduled, id);
-      } catch (NumberFormatException | ArithmeticException | DateTimeException ex) {
-        throw new SerializationException(ex);
-      }
+    if (Objects.isNull(bytes)){
+      return null;
+    } else if (bytes.length < INSTANT_SIZE){
+      throw new SerializationException("Not enough bytes to deserialize!");
+    }
+    var buffer = ByteBuffer.wrap(bytes);
+    var seconds = buffer.getLong();
+    var nanos = buffer.getInt();
+    Instant scheduled;
+    try {
+      scheduled = Instant.ofEpochSecond(seconds, nanos);
+    } catch (DateTimeException ex) {
+      throw new SerializationException(ex);
+    }
+    var idLength = bytes.length - INSTANT_SIZE;
+    final ScheduledId scheduledId;
+    if (idLength > 0) {
+      var id = new byte[idLength];
+      buffer.get(id);
+      var idString = new String(id, StandardCharsets.UTF_8);
+      scheduledId = new ScheduledId(scheduled, idString);
+    } else {
+      scheduledId = new ScheduledId(scheduled, null);
     }
     return scheduledId;
   }
