@@ -3,7 +3,6 @@ package com.rhysmccaig.kscheduler.serdes;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -35,9 +34,9 @@ public class ScheduledIdSerializerTest {
 
   @Test
   public void serialize_no_id() {
-    var buffer = ByteBuffer.allocate(16)
-        .putLong(SCHEDULED.getEpochSecond())
-        .putInt(SCHEDULED.getNano());
+    var buffer = ByteBuffer.allocate(12)
+        .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()))
+        .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()));
     var expected = buffer.array();
     var record = new ScheduledId(SCHEDULED, null);
     var actual = SERIALIZER.serialize(null, record);

@@ -24,7 +24,7 @@ public class ScheduledIdDeserializer implements Deserializer<ScheduledId> {
   public ScheduledId deserialize(String topic, byte[] bytes) {
     if (bytes == null){
       return null;
-    } else if (bytes.length != INSTANT_SIZE || bytes.length != (INSTANT_SIZE + ID_SIZE)){
+    } else if (bytes.length != INSTANT_SIZE && bytes.length != (INSTANT_SIZE + ID_SIZE)){
       throw new SerializationException("Invalid byte count!");
     }
     var buffer = _THREADLOCAL.get().position(0);

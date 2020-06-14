@@ -3,6 +3,7 @@ package com.rhysmccaig.kscheduler.serdes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 
@@ -15,7 +16,7 @@ public class ScheduledIdSerdeTest {
   
   private static Serde<ScheduledId> SERDE = new ScheduledIdSerde();
   private static Instant SCHEDULED = Instant.EPOCH;
-  private static String ID =  "123456";
+  private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
   private static Deserializer<ScheduledId> deserializer = SERDE.deserializer();
   private static Serializer<ScheduledId> serializer = SERDE.serializer();
 
