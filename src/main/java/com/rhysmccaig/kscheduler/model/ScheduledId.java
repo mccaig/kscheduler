@@ -2,14 +2,15 @@ package com.rhysmccaig.kscheduler.model;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 public class ScheduledId {
 
 
   private Instant scheduled;
-  private String id;
+  private UUID id;
 
-  public ScheduledId(Instant scheduled, String id) {
+  public ScheduledId(Instant scheduled, UUID id) {
     if (scheduled == null) {
       throw new NullPointerException("scheduled must not be null");
     }
@@ -21,7 +22,7 @@ public class ScheduledId {
     return scheduled;
   }
 
-  public String id() {
+  public UUID id() {
     return id;
   }
 
