@@ -5,13 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Properties;
+import java.util.stream.Stream;
 
+import com.google.common.primitives.UnsignedLong;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
@@ -39,6 +42,9 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.test.TestRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class KSchedulerTest {
   
@@ -65,23 +71,23 @@ public class KSchedulerTest {
   private ScheduledRecordMetadata metadataScheduledIn1Min;
   
 
-  @BeforeEach
-  public void setup() {
-    var storeBuilder = KScheduler.getStoreBuilder();
-    var topology = KScheduler.getTopology(INPUT_TOPIC, ONE_MINUTE, storeBuilder);
-    // setup test driver
-    Properties props = new Properties();
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
-    props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234");
-    testDriver = new TopologyTestDriver(topology, props);
-    inputTopic = testDriver.createInputTopic(INPUT_TOPIC, new ByteArraySerializer(), new ByteArraySerializer());
-    kvStore = testDriver.getKeyValueStore(storeBuilder.name());
-    outputTopicA = testDriver.createOutputTopic(OUTPUT_TOPIC_A, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-    clock = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault());
-    now = Instant.now(clock);
-    metadataScheduledIn1Min = new ScheduledRecordMetadata(now.plus(ONE_MINUTE), OUTPUT_TOPIC_A, "metadataScheduledIn1Min", null, null, null);
-    outputTopicB = testDriver.createOutputTopic(OUTPUT_TOPIC_B, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-  }
+  // @BeforeEach
+  // public void setup() {
+  //   var storeBuilder = KScheduler.getStoreBuilder();
+  //   var topology = KScheduler.getTopology(INPUT_TOPIC, ONE_MINUTE, storeBuilder);
+  //   // setup test driver
+  //   Properties props = new Properties();
+  //   props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
+  //   props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummy:1234");
+  //   testDriver = new TopologyTestDriver(topology, props);
+  //   inputTopic = testDriver.createInputTopic(INPUT_TOPIC, new ByteArraySerializer(), new ByteArraySerializer());
+  //   kvStore = testDriver.getKeyValueStore(storeBuilder.name());
+  //   outputTopicA = testDriver.createOutputTopic(OUTPUT_TOPIC_A, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+  //   clock = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault());
+  //   now = Instant.now(clock);
+  //   metadataScheduledIn1Min = new ScheduledRecordMetadata(now.plus(ONE_MINUTE), OUTPUT_TOPIC_A, "metadataScheduledIn1Min", null, null, null);
+  //   outputTopicB = testDriver.createOutputTopic(OUTPUT_TOPIC_B, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+  // }
 
   @Test
   public void recordWithNoMetadataIsDropped() {
@@ -99,7 +105,6 @@ public class KSchedulerTest {
     //assert(outputTopicA.readValue() != null);
     //No more output in topic
     //assert(outputTopicA.isEmpty());
-
   }
 
   @Test
@@ -160,5 +165,34 @@ public class KSchedulerTest {
     var destinationHeader = outputRecord.headers().lastHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY);
     var expectedDestinationHeader = new RecordHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, OUTPUT_TOPIC_A.getBytes(StandardCharsets.UTF_8));
     assertEquals(expectedDestinationHeader, destinationHeader);
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {
+    //Long.MIN_VALUE, 
+    //Long.MIN_VALUE+1,
+    -129L,
+    -128,
+    -2,
+    0,
+    1,
+    2,
+    127,
+    128,
+    129,
+    Long.MAX_VALUE-1,
+    Long.MAX_VALUE
+  })
+  public void unsignedTest(Long bits) {
+    var diff = UnsignedLong.valueOf(Long.MAX_VALUE).plus(UnsignedLong.ONE);
+    UnsignedLong unsigned;
+    if (bits >= 0) {
+      unsigned = UnsignedLong.valueOf(bits).plus(diff);
+    } else {
+      unsigned = UnsignedLong.valueOf(bits - Long.MIN_VALUE);
+    }
+    Long longValue = unsigned.longValue();
+    var bytes = ByteBuffer.allocate(8).putLong(longValue).array();
+    assertEquals(null, bytes);
   }
 }
