@@ -97,11 +97,16 @@ public class HeaderUtils {
         return headers.add(KSCHEDULER_ERROR_HEADER_KEY, error.getBytes(StandardCharsets.UTF_8));
     }
 
+    // will throw if is cant parse
     public static Instant parseHeaderAsInstant(Header header) {
         if (header == null || header.value() == null) {
             return null;
         }
-        return Instant.parse(new String(header.value(), StandardCharsets.UTF_8));
+        try {
+            return Instant.parse(new String(header.value(), StandardCharsets.UTF_8));
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
     }
 
     public static UUID parseHeaderAsUUID(Header header) {
@@ -109,7 +114,6 @@ public class HeaderUtils {
         if (header != null && header.value() != null 
             && (header.value().length == 16 || header.value().length == 36)) {
             var uuidBytes = header.value();
-            
             if (uuidBytes.length == 16) {
                 // Encoded as bytes
                 var buffer = TL_BUFFER.get().position(0).put(uuidBytes).flip();

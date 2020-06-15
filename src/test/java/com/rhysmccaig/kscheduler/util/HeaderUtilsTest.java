@@ -28,14 +28,11 @@ public class HeaderUtilsTest {
   public static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
   private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
 
-  private ScheduledRecordMetadata simpleMetadata;
-  private ScheduledRecordMetadata fullMetadata;
-
+  private ScheduledRecordMetadata metadata;
 
   @BeforeEach
   public void before() {
-    simpleMetadata = new ScheduledRecordMetadata(Instant.EPOCH, null, null, null, "topic");
-    fullMetadata = new ScheduledRecordMetadata(Instant.EPOCH, Instant.MAX, Instant.MIN, ID, "topic");
+    metadata = new ScheduledRecordMetadata(Instant.EPOCH, Instant.MAX, Instant.MIN, ID, "topic");
   }
 
 
@@ -59,7 +56,7 @@ public class HeaderUtilsTest {
 
   @ParameterizedTest
   @CsvSource({
-    "1970-01-01T01:00:00+01:00",    // Zulu TZ only
+    "1970-01-01T01:00:00+01:00",    // no TZ
     "1970-01-01T01:00:00",          // no TZ
     "1970-01-01T01:00:00.123456789", // no TZ
     "xyzzy", // gibberish
@@ -111,7 +108,7 @@ public class HeaderUtilsTest {
   @Test
   public void setMetadataRemovesExistingMetadataOnNullMetadata() {
     var key = HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY;
-    var value = SERIALIZER.serialize(null, simpleMetadata);
+    var value = SERIALIZER.serialize(null, metadata);
     var expected = new RecordHeaders();
     var original = new RecordHeaders();
     original.add(key, value);
@@ -124,7 +121,7 @@ public class HeaderUtilsTest {
     var otherKey = "Hello";
     var otherValue = "World".getBytes(StandardCharsets.UTF_8);
     var key = HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY;
-    var value = SERIALIZER.serialize(null, simpleMetadata);
+    var value = SERIALIZER.serialize(null, metadata);
     var expected = new RecordHeaders();
     expected.add(otherKey, otherValue);
     var original = new RecordHeaders();
@@ -138,10 +135,10 @@ public class HeaderUtilsTest {
   public void setMetadataReplacesExistingMetadataOnMetadataAndOtherHeaders() {
     var otherKey = "Hello";
     var otherValue = "World".getBytes(StandardCharsets.UTF_8);
-    var originalMetadata = simpleMetadata;
+    var originalMetadata = metadata;
     var key = HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY;
     var value = SERIALIZER.serialize(null, originalMetadata);
-    var newMetadata = fullMetadata;
+    var newMetadata = metadata;
     var newMetadataBytes = SERIALIZER.serialize(null, newMetadata);
     var original = new RecordHeaders();
     original.add(otherKey, otherValue);
@@ -156,7 +153,7 @@ public class HeaderUtilsTest {
   public void setMetadataSetsMetadataOnMetadataAndOtherHeaders() {
     var otherKey = "Hello";
     var otherValue = "World".getBytes(StandardCharsets.UTF_8);
-    var newMetadata = new ScheduledRecordMetadata(Instant.MAX, null, null, null, "topic");
+    var newMetadata = metadata;
     var newMetadataBytes = SERIALIZER.serialize(null, newMetadata);
     var original = new RecordHeaders();
     original.add(otherKey, otherValue);
@@ -171,20 +168,20 @@ public class HeaderUtilsTest {
   @Test
   public void extractMetadata_MetadataHeaderOnly() {
     var headers = new RecordHeaders();
-    var serialized = SERIALIZER.serialize(null, simpleMetadata);
+    var serialized = SERIALIZER.serialize(null, metadata);
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, serialized);
     var result = HeaderUtils.extractMetadata(headers);
-    assertEquals(simpleMetadata, result);
+    assertEquals(metadata, result);
     assertEquals(headers.lastHeader(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY).value(), serialized);
   }
 
   @Test
   public void extractMetadata_MetadataHeaderOnlyRemovesMetadataHeader() {
     var headers = new RecordHeaders();
-    var serialized = SERIALIZER.serialize(null, simpleMetadata);
+    var serialized = SERIALIZER.serialize(null, metadata);
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, serialized);
     var result = HeaderUtils.extractMetadata(headers, true);
-    assertEquals(simpleMetadata, result);
+    assertEquals(metadata, result);
     assertNull(headers.lastHeader(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY));
   }
 
@@ -193,12 +190,12 @@ public class HeaderUtilsTest {
     var otherKey = "Hello";
     var otherValue = "World".getBytes(StandardCharsets.UTF_8);
     var headers = new RecordHeaders();
-    var serialized = SERIALIZER.serialize(null, simpleMetadata);
+    var serialized = SERIALIZER.serialize(null, metadata);
     headers.add(otherKey, otherValue);
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, serialized);
     var expected = new RecordHeader(otherKey, otherValue);
     var result = HeaderUtils.extractMetadata(headers, true);
-    assertEquals(simpleMetadata, result);
+    assertEquals(metadata, result);
     assertNull(headers.lastHeader(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY));
     assertEquals(expected, headers.lastHeader(otherKey));
   }
@@ -206,12 +203,12 @@ public class HeaderUtilsTest {
   @Test
   public void extractMetadata_NoMetadataHeaderFullKSchedulerHeaders() {
     var headers = new RecordHeaders();
-    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, fullMetadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, fullMetadata.expires().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, fullMetadata.created().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, fullMetadata.id().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, fullMetadata.destination().getBytes(StandardCharsets.UTF_8));
-    var expected = fullMetadata;
+    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, metadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, metadata.expires().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, metadata.created().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, metadata.id().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, metadata.destination().getBytes(StandardCharsets.UTF_8));
+    var expected = metadata;
     var result = HeaderUtils.extractMetadata(headers);
     assertEquals(expected, result);
     assertNotNull(headers.lastHeader(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY));
@@ -224,12 +221,12 @@ public class HeaderUtilsTest {
   @Test
   public void extractMetadata_NoMetadataHeaderFullKSchedulerHeadersRemovesMetadataHeaders() {
     var headers = new RecordHeaders();
-    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, fullMetadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, fullMetadata.expires().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, fullMetadata.created().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, fullMetadata.id().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, fullMetadata.destination().getBytes(StandardCharsets.UTF_8));
-    var expected = fullMetadata;
+    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, metadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, metadata.expires().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, metadata.created().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, metadata.id().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, metadata.destination().getBytes(StandardCharsets.UTF_8));
+    var expected = metadata;
     var result = HeaderUtils.extractMetadata(headers, true);
     assertEquals(expected, result);
     assertNull(headers.lastHeader(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY));
@@ -242,13 +239,13 @@ public class HeaderUtilsTest {
   @Test
   public void extractMetadata_MetadataHeaderFullKSchedulerHeadersUseMetadataHeader() {
     var headers = new RecordHeaders();
-    headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, SERIALIZER.serialize(null, simpleMetadata));
-    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, fullMetadata.expires().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, fullMetadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, fullMetadata.created().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, fullMetadata.id().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, fullMetadata.destination().getBytes(StandardCharsets.UTF_8));
-    var expected = simpleMetadata;
+    headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, SERIALIZER.serialize(null, metadata));
+    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, metadata.expires().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, metadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, metadata.created().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, metadata.id().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, metadata.destination().getBytes(StandardCharsets.UTF_8));
+    var expected = metadata;
     var result = HeaderUtils.extractMetadata(headers);
     assertEquals(expected, result);
   }
@@ -257,12 +254,12 @@ public class HeaderUtilsTest {
   public void extractMetadata_MetadataHeaderFullKscheduleHeadersFallbackOnBAdMetadataHeader() {
     var headers = new RecordHeaders();
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, new byte[] {10, 0});
-    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, fullMetadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, fullMetadata.expires().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, fullMetadata.created().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, fullMetadata.id().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, fullMetadata.destination().getBytes(StandardCharsets.UTF_8));
-    var expected = fullMetadata;
+    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, metadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, metadata.expires().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, metadata.created().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, metadata.id().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, metadata.destination().getBytes(StandardCharsets.UTF_8));
+    var expected = metadata;
     var result = HeaderUtils.extractMetadata(headers);
     assertEquals(expected, result);
   }
@@ -270,9 +267,9 @@ public class HeaderUtilsTest {
   @Test
   public void extractMetadata_NoMetadataHeaderMissingKSchedulerHeaderReturnsNull() {
     var headers = new RecordHeaders();
-    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, fullMetadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, fullMetadata.expires().toString().getBytes(StandardCharsets.UTF_8));
-    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, fullMetadata.created().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, metadata.scheduled().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, metadata.expires().toString().getBytes(StandardCharsets.UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, metadata.created().toString().getBytes(StandardCharsets.UTF_8));
     var result = HeaderUtils.extractMetadata(headers);
     assertEquals(null, result);
   }
