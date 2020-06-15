@@ -13,13 +13,11 @@ public final class ScheduledRecordMetadata {
   private String destination;
   
   public ScheduledRecordMetadata(Instant scheduled, Instant expires, Instant created, UUID id, String destination) {
-    Objects.requireNonNull(scheduled, "scheduled must not be null");
-    Objects.requireNonNull(destination, "destination must not be null");
-    this.scheduled = scheduled;
-    this.expires = expires;
-    this.created = created;
-    this.id = id;
-    this.destination = destination;
+    this.scheduled = Objects.requireNonNull(scheduled, "scheduled must not be null");
+    this.expires = Objects.requireNonNull(expires, "expires must not be null");
+    this.created = Objects.requireNonNull(created, "created must not be null");
+    this.id = Objects.requireNonNull(id, "id must not be null");
+    this.destination = Objects.requireNonNull(destination, "destination must not be null");
   }
 
   public Instant scheduled() {

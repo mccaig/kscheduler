@@ -18,9 +18,9 @@ import com.google.common.primitives.UnsignedLong;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataDeserializer;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerde;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataDeserializer;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 import org.apache.kafka.common.header.internals.RecordHeader;

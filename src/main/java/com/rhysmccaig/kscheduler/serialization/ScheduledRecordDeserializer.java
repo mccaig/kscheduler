@@ -1,4 +1,4 @@
-package com.rhysmccaig.kscheduler.serdes;
+package com.rhysmccaig.kscheduler.serialization;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;

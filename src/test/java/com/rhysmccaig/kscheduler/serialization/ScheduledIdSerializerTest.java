@@ -1,4 +1,4 @@
-package com.rhysmccaig.kscheduler.serdes;
+package com.rhysmccaig.kscheduler.serialization;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 

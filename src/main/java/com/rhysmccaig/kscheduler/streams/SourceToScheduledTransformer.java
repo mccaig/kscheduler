@@ -32,20 +32,14 @@ public class SourceToScheduledTransformer
   public KeyValue<ScheduledRecordMetadata, ScheduledRecord> transform(Bytes key, Bytes value) {
     var headers = this.context.headers();
     var metadata = HeaderUtils.extractMetadata(headers, true);
-    KeyValue<ScheduledRecordMetadata, ScheduledRecord> transformed = null;
-    if (Objects.nonNull(metadata)) {
-      // Set an ID if one hasnt been supplied
-      if (Objects.isNull(metadata.id())) {
-        metadata.setId(UUID.randomUUID().toString());
-      }
-      transformed = new KeyValue<ScheduledRecordMetadata, ScheduledRecord>(metadata, new ScheduledRecord(metadata, key.get(), value.get(), headers));
-    } else {
+    if (metadata == null) {
       if (logger.isDebugEnabled()) {
         var tpo = new TopicPartitionOffset(context.topic(), context.partition(), context.offset());
         logger.debug("No scheduler metadata found for message: {}, dropping message.", tpo);
       }
+      return null;
     }
-    return transformed;
+    return new KeyValue<ScheduledRecordMetadata, ScheduledRecord>(metadata, new ScheduledRecord(metadata, key.get(), value.get(), headers));
   }
 
 

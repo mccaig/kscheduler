@@ -11,8 +11,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataDeserializer;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataDeserializer;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer;
 
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
@@ -44,7 +44,7 @@ public class HeaderUtilsTest {
     var expected = Instant.EPOCH;
     var instantString = "1970-01-01T00:00:00Z";
     RecordHeader header = new RecordHeader(EMPTY_STRING, instantString.getBytes(StandardCharsets.UTF_8));
-    var actual = HeaderUtils.tryParseHeaderAsInstant(header);
+    var actual = HeaderUtils.parseHeaderAsInstant(header);
     assertEquals(expected, actual);
   }
 
@@ -53,7 +53,7 @@ public class HeaderUtilsTest {
     var expected = Instant.EPOCH.plus(Duration.ofNanos(123456789L));
     var instantString = "1970-01-01T00:00:00.123456789Z";
     RecordHeader header = new RecordHeader(EMPTY_STRING, instantString.getBytes(StandardCharsets.UTF_8));
-    var actual = HeaderUtils.tryParseHeaderAsInstant(header);
+    var actual = HeaderUtils.parseHeaderAsInstant(header);
     assertEquals(expected, actual);
   }
 
@@ -69,7 +69,7 @@ public class HeaderUtilsTest {
     var key = EMPTY_STRING;
     byte[] value = instantString.getBytes(StandardCharsets.UTF_8);
     RecordHeader header = new RecordHeader(key, value);
-    var actual = HeaderUtils.tryParseHeaderAsInstant(header);
+    var actual = HeaderUtils.parseHeaderAsInstant(header);
     assertEquals(null, actual);
   }
 
@@ -78,7 +78,7 @@ public class HeaderUtilsTest {
     var key = EMPTY_STRING;
     byte[] value = "".getBytes(StandardCharsets.UTF_8);
     RecordHeader header = new RecordHeader(key, value);
-    var actual = HeaderUtils.tryParseHeaderAsInstant(header);
+    var actual = HeaderUtils.parseHeaderAsInstant(header);
     assertEquals(null, actual);
   }
 

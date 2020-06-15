@@ -1,9 +1,11 @@
 package com.rhysmccaig.kscheduler.util;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
+import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataDeserializer;
@@ -23,13 +25,13 @@ public class HeaderUtils {
     public final static String KSCHEDULER_DESTINATION_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Destination";
     public final static String KSCHEDULER_CREATED_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Created";
     public final static String KSCHEDULER_EXPIRES_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Expires";
-    public final static String KSCHEDULER_PRODUCED_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Produced";
     public final static String KSCHEDULER_ERROR_HEADER_KEY = KSCHEDULER_HEADER_KEY_PREFIX +  "Error";
 
     private final static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
     private final static ScheduledRecordMetadataSerializer SERIALIZER = new ScheduledRecordMetadataSerializer();
 
-    
+    private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(16));
+
     public static ScheduledRecordMetadata extractMetadata(Headers headers) {
         return extractMetadata(headers, false);
     }
@@ -44,16 +46,19 @@ public class HeaderUtils {
         }
         // Failed then fallback to individual headers
         if (metadata == null || metadata.scheduled() == null ) {
-            final var scheduled = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_SCHEDULED_HEADER_KEY));
+            final var scheduled = parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_SCHEDULED_HEADER_KEY));
+            final var expires = parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_EXPIRES_HEADER_KEY));
+            final var created = parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_CREATED_HEADER_KEY));
             final var destinationHeader = headers.lastHeader(KSCHEDULER_DESTINATION_HEADER_KEY);
-            final var destination = Objects.isNull(destinationHeader) ? null : new String(destinationHeader.value(), StandardCharsets.UTF_8);
-            if (Objects.nonNull(scheduled) && Objects.nonNull(destination)) {
-                final var idHeader = headers.lastHeader(KSCHEDULER_ID_HEADER_KEY);
-                final String id = Objects.isNull(idHeader) ? null : new String(idHeader.value(), StandardCharsets.UTF_8);
-                final var created = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_CREATED_HEADER_KEY));
-                final var expires = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_EXPIRES_HEADER_KEY));
-                final var produced = tryParseHeaderAsInstant(headers.lastHeader(KSCHEDULER_PRODUCED_HEADER_KEY));
-                metadata = new ScheduledRecordMetadata(scheduled, destination, id, created, expires, produced);
+            var id = parseHeaderAsUUID(headers.lastHeader(KSCHEDULER_ID_HEADER_KEY));
+            if (scheduled != null && expires != null && created != null 
+                && destinationHeader != null && destinationHeader.value() != null) {
+                if (id == null) {
+                    // If an ID hasnt been set, then set one now.
+                    id = UUID.randomUUID();
+                }
+                final var destination = new String(destinationHeader.value(), StandardCharsets.UTF_8);
+                metadata = new ScheduledRecordMetadata(scheduled, expires, created, id, destination);
             }
         }
         if (Objects.nonNull(remove) && remove) {
@@ -63,7 +68,6 @@ public class HeaderUtils {
             headers.remove(KSCHEDULER_DESTINATION_HEADER_KEY);
             headers.remove(KSCHEDULER_CREATED_HEADER_KEY);
             headers.remove(KSCHEDULER_EXPIRES_HEADER_KEY);
-            headers.remove(KSCHEDULER_PRODUCED_HEADER_KEY);
         }
         return metadata;
     }
@@ -93,14 +97,32 @@ public class HeaderUtils {
         return headers.add(KSCHEDULER_ERROR_HEADER_KEY, error.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static Instant tryParseHeaderAsInstant(Header header) {
-        Instant instant = null;
-        if (Objects.nonNull(header)) {
-            try {
-                instant = Instant.parse(new String(header.value(), StandardCharsets.UTF_8));
-            } catch (DateTimeParseException ex) {}
+    public static Instant parseHeaderAsInstant(Header header) {
+        if (header == null || header.value() == null) {
+            return null;
         }
-        return instant;
+        return Instant.parse(new String(header.value(), StandardCharsets.UTF_8));
+    }
+
+    public static UUID parseHeaderAsUUID(Header header) {
+        UUID uuid = null;
+        if (header != null && header.value() != null 
+            && (header.value().length == 16 || header.value().length == 36)) {
+            var uuidBytes = header.value();
+            
+            if (uuidBytes.length == 16) {
+                // Encoded as bytes
+                var buffer = TL_BUFFER.get().position(0).put(uuidBytes).flip();
+                uuid = SerializationUtils.getUUID(buffer);
+            } else {
+                // Encoded as a String
+                var uuidString = new String(uuidBytes);
+                try {
+                    uuid = UUID.fromString(uuidString);
+                } catch (IllegalArgumentException ex) {}
+            }
+        }
+        return uuid;
     }
 
 

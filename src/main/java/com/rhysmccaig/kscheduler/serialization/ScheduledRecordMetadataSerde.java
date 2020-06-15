@@ -1,4 +1,4 @@
-package com.rhysmccaig.kscheduler.serdes;
+package com.rhysmccaig.kscheduler.serialization;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 
@@ -6,11 +6,14 @@ import org.apache.kafka.common.serialization.Serde;
 
 public class ScheduledRecordMetadataSerde implements Serde<ScheduledRecordMetadata> {
   
+  public static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
+  public static ScheduledRecordMetadataSerializer SERIALIZER = new ScheduledRecordMetadataSerializer();
+
   public ScheduledRecordMetadataDeserializer deserializer() {
-    return new ScheduledRecordMetadataDeserializer();
+    return DESERIALIZER;
   }
 
   public ScheduledRecordMetadataSerializer serializer() {
-    return new ScheduledRecordMetadataSerializer();
+    return SERIALIZER;
   }
 }

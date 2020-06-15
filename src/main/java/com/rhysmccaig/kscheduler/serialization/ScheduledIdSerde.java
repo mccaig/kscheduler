@@ -1,4 +1,4 @@
-package com.rhysmccaig.kscheduler.serdes;
+package com.rhysmccaig.kscheduler.serialization;
 
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 

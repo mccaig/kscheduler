@@ -11,11 +11,8 @@ public class ScheduledId {
   private UUID id;
 
   public ScheduledId(Instant scheduled, UUID id) {
-    if (scheduled == null) {
-      throw new NullPointerException("scheduled must not be null");
-    }
-    this.scheduled = scheduled;
-    this.id = id;
+    this.scheduled = Objects.requireNonNull(scheduled, "scheduled must not be null");
+    this.id = Objects.requireNonNull(id, "id must not be null");
   }
 
   public Instant scheduled() {
