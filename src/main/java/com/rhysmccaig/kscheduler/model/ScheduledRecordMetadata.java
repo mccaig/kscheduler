@@ -2,37 +2,24 @@ package com.rhysmccaig.kscheduler.model;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 public final class ScheduledRecordMetadata {
 
   private Instant scheduled;
-  private String destination;
-  private String id;
-  private Instant created;
   private Instant expires;
-  private Instant produced;
+  private Instant created;
+  private UUID id;
+  private String destination;
   
-  public ScheduledRecordMetadata(Instant scheduled, String destination, String id, Instant created, Instant expires, Instant produced) {
+  public ScheduledRecordMetadata(Instant scheduled, Instant expires, Instant created, UUID id, String destination) {
     Objects.requireNonNull(scheduled, "scheduled must not be null");
     Objects.requireNonNull(destination, "destination must not be null");
     this.scheduled = scheduled;
-    this.destination = destination;
-    this.id = id;
-    this.created = created;
     this.expires = expires;
-    this.produced = produced;
-  }
-
-  public String id() {
-    return id;
-  }
-
-  public void setId(String id) {
+    this.created = created;
     this.id = id;
-  }
-
-  public String destination() {
-    return destination;
+    this.destination = destination;
   }
 
   public Instant scheduled() {
@@ -47,18 +34,17 @@ public final class ScheduledRecordMetadata {
     return created;
   }
 
-  public Instant produced() {
-    return produced;
+  public UUID id() {
+    return id;
   }
 
-  public void setProduced(Instant produced) {
-    this.produced = produced;
+  public String destination() {
+    return destination;
   }
-
 
   @Override
   public int hashCode() {
-      return Objects.hash(scheduled, destination, id, created, expires, produced);
+      return Objects.hash(scheduled, expires, created, id, destination);
   }
 
   @Override
@@ -69,11 +55,10 @@ public final class ScheduledRecordMetadata {
     }
     var co = (ScheduledRecordMetadata) o;
     return Objects.equals(scheduled, co.scheduled)
-        && Objects.equals(destination, co.destination)
-        && Objects.equals(id, co.id) 
-        && Objects.equals(created, co.created)
         && Objects.equals(expires, co.expires)
-        && Objects.equals(produced, co.produced);
+        && Objects.equals(created, co.created)
+        && Objects.equals(id, co.id) 
+        && Objects.equals(destination, co.destination);
   }
 
   @Override
@@ -81,16 +66,14 @@ public final class ScheduledRecordMetadata {
     return new StringBuilder().append(ScheduledRecordMetadata.class.getSimpleName())
       .append("{scheduled=")
       .append(scheduled)
-      .append(", destination=")
-      .append(destination)
-      .append(", id=")
-      .append(id)
-      .append(", created=")
-      .append(created)
       .append(", expires=")
       .append(expires)
-      .append(", produced=")
-      .append(produced)
+      .append(", created=")
+      .append(created)
+      .append(", id=")
+      .append(id)
+      .append(", destination=")
+      .append(destination)
       .append("}")
       .toString();
   }

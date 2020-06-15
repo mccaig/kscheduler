@@ -1,15 +1,42 @@
 package com.rhysmccaig.kscheduler.serdes;
 
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import com.google.protobuf.Timestamp;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
+import com.rhysmccaig.kscheduler.util.SerializationUtils;
 
 import org.apache.kafka.common.serialization.Serializer;
 
 public class ScheduledRecordMetadataSerializer implements Serializer<ScheduledRecordMetadata> {
     
+  private static int INSTANT_SIZE = Long.BYTES + Integer.BYTES;
+  private static int ID_SIZE = Long.BYTES + Long.BYTES;
+  private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(INSTANT_SIZE + ID_SIZE));
+
+  public byte[] serialize(String topic, ScheduledRecordMetadata data) {
+    if (data == null) {
+      return null;
+    } else {
+      var id = data.id();
+      var buffer = TL_BUFFER.get().position(0);
+      buffer.put(SerializationUtils.toOrderedBytes(data.scheduled().getEpochSecond()))
+            .put(SerializationUtils.toOrderedBytes(data.scheduled().getNano()));
+      if (data.id() != null) {
+        buffer.putLong(id.getMostSignificantBits())
+              .putLong(id.getLeastSignificantBits());
+      }
+      buffer.flip();
+      var bytes = new byte[buffer.limit()];
+      buffer.get(bytes, 0, bytes.length);
+      return bytes;
+    }
+  }
+
+
+
   public byte[] serialize(String topic, ScheduledRecordMetadata data) {
     return (data == null) ? null : toBytes(data);
   }

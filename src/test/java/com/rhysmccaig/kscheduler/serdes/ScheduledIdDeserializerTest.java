@@ -23,7 +23,8 @@ public class ScheduledIdDeserializerTest {
 
   @Test
   public void deserialize() {
-    var buffer = ByteBuffer.allocate(28)
+    var buffer = ByteBuffer.allocate(29)
+      .put(ScheduledIdSerializer.VERSION_BYTE)
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()))
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()))
       .putLong(ID.getMostSignificantBits())
@@ -36,7 +37,8 @@ public class ScheduledIdDeserializerTest {
 
   @Test
   public void deserialize_no_id() {
-    var buffer = ByteBuffer.allocate(12)
+    var buffer = ByteBuffer.allocate(13)
+      .put(ScheduledIdSerializer.VERSION_BYTE)
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()))
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()));
     var bytes = buffer.array();
@@ -47,8 +49,9 @@ public class ScheduledIdDeserializerTest {
 
   @Test
   public void deserialize_too_short_throws() {
-    var buffer = ByteBuffer.allocate(8)
-    .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()));
+    var buffer = ByteBuffer.allocate(9)
+      .put(ScheduledIdSerializer.VERSION_BYTE)
+      .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()));
     var bytes = buffer.array();
     assertThrows(SerializationException.class, () -> DESERIALIZER.deserialize(null, bytes));
   }
@@ -57,7 +60,8 @@ public class ScheduledIdDeserializerTest {
 
   @Test
   public void deserialize_overflow_throws() {
-    var buffer = ByteBuffer.allocate(28)
+    var buffer = ByteBuffer.allocate(29)
+      .put(ScheduledIdSerializer.VERSION_BYTE)
       .put(SerializationUtils.toOrderedBytes(Long.MAX_VALUE))
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()))
       .putLong(ID.getMostSignificantBits())
@@ -68,7 +72,21 @@ public class ScheduledIdDeserializerTest {
 
   @Test
   public void deserialize_underflow_throws() {
-    var buffer = ByteBuffer.allocate(28)
+    var buffer = ByteBuffer.allocate(29)
+      .put(ScheduledIdSerializer.VERSION_BYTE)
+      .put(SerializationUtils.toOrderedBytes(Long.MIN_VALUE))
+      .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()))
+      .putLong(ID.getMostSignificantBits())
+      .putLong(ID.getLeastSignificantBits());
+    var bytes = buffer.array();
+    assertThrows(SerializationException.class, () -> DESERIALIZER.deserialize(null, bytes));
+  }
+
+  @Test
+  public void deserialize_invalid_version_throws() {
+    byte version = 0x55;
+    var buffer = ByteBuffer.allocate(29)
+      .put(version)
       .put(SerializationUtils.toOrderedBytes(Long.MIN_VALUE))
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()))
       .putLong(ID.getMostSignificantBits())

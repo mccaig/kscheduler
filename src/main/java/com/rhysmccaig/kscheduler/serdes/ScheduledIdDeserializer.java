@@ -19,16 +19,20 @@ public class ScheduledIdDeserializer implements Deserializer<ScheduledId> {
     
   private static int INSTANT_SIZE = Long.BYTES + Integer.BYTES;
   private static int ID_SIZE = Long.BYTES + Long.BYTES;
-  private static final ThreadLocal<ByteBuffer> _THREADLOCAL = ThreadLocal.withInitial(() -> ByteBuffer.allocate(INSTANT_SIZE + ID_SIZE));
+  private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(INSTANT_SIZE + ID_SIZE));
 
   public ScheduledId deserialize(String topic, byte[] bytes) {
     if (bytes == null){
       return null;
-    } else if (bytes.length != INSTANT_SIZE && bytes.length != (INSTANT_SIZE + ID_SIZE)){
+    } else if (bytes.length != (1 + INSTANT_SIZE) && bytes.length != (1+ INSTANT_SIZE + ID_SIZE)){
       throw new SerializationException("Invalid byte count!");
     }
-    var buffer = _THREADLOCAL.get().position(0);
+    var buffer = TL_BUFFER.get().position(0);
     buffer.put(bytes).flip();
+    var version = buffer.get();
+    if (version != ScheduledIdSerializer.VERSION_BYTE) {
+      throw new SerializationException("Unsupported version");
+    }
     var secondsBytes = new byte[Long.BYTES];
     buffer.get(secondsBytes);
     var seconds = SerializationUtils.longFromOrderedBytes(secondsBytes);

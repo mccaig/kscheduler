@@ -21,7 +21,8 @@ public class ScheduledIdSerializerTest {
 
   @Test
   public void serialize() {
-    var buffer = ByteBuffer.allocate(28)
+    var buffer = ByteBuffer.allocate(29)
+        .put(ScheduledIdSerializer.VERSION_BYTE)
         .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()))
         .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()))
         .putLong(ID.getMostSignificantBits())
@@ -34,7 +35,8 @@ public class ScheduledIdSerializerTest {
 
   @Test
   public void serialize_no_id() {
-    var buffer = ByteBuffer.allocate(12)
+    var buffer = ByteBuffer.allocate(13)
+        .put(ScheduledIdSerializer.VERSION_BYTE)
         .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()))
         .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()));
     var expected = buffer.array();

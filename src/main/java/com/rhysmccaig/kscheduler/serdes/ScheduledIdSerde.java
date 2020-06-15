@@ -6,11 +6,14 @@ import org.apache.kafka.common.serialization.Serde;
 
 public class ScheduledIdSerde implements Serde<ScheduledId> {
     
+  public static ScheduledIdDeserializer DESERIALIZER = new ScheduledIdDeserializer();
+  public static ScheduledIdSerializer SERIALIZER = new ScheduledIdSerializer();
+
   public ScheduledIdDeserializer deserializer() {
-    return new ScheduledIdDeserializer();
+    return DESERIALIZER;
   }
 
   public ScheduledIdSerializer serializer() {
-    return new ScheduledIdSerializer();
+    return SERIALIZER;
   }
 }
