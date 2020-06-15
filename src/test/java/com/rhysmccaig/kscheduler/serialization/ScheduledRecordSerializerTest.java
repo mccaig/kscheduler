@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
@@ -22,34 +23,28 @@ import org.junit.jupiter.api.Test;
 public class ScheduledRecordSerializerTest {
   
   private static Instant SCHEDULED = Instant.EPOCH;
-  private static String DESTINATION = "destination";
-  private static String ID = "1234";
-  private static Instant CREATED = Instant.EPOCH.minus(Duration.ofDays(1));
-  private static Instant EXPIRES = Instant.EPOCH.plus(Duration.ofDays(1));
-  private static Instant PRODUCED = Instant.EPOCH.plus(Duration.ofMinutes(1));
+  private static Instant EXPIRES = Instant.MAX;
+  private static Instant CREATED = Instant.MIN;
+  private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
+  private static String DESTINATION = "topic";
+
   private static String HEADER_KEY = "hello";
   private static byte[] HEADER_VALUE = "world".getBytes(StandardCharsets.UTF_8);
   private static byte[] KEY = "1234".getBytes(StandardCharsets.UTF_8);
   private static byte[] VALUE = "abcd".getBytes(StandardCharsets.UTF_8);
   private static Headers HEADERS = new RecordHeaders().add(new RecordHeader("hello", "world".getBytes(StandardCharsets.UTF_8)));
   private static ScheduledRecordSerializer SERIALIZER = new ScheduledRecordSerializer();
+  private static ScheduledRecordMetadataSerializer METADATA_SERIALIZER = new ScheduledRecordMetadataSerializer();
 
   private Protos.ScheduledRecord.Builder srpBuilder;
-  private ScheduledRecordMetadata srm = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, ID, CREATED, EXPIRES, PRODUCED);
-  private Protos.ScheduledRecordMetadata.Builder srmpBuilder;
+  private ScheduledRecordMetadata srm;
 
 
   @BeforeEach
   public void beforeEach() {
-    srmpBuilder = Protos.ScheduledRecordMetadata.newBuilder()
-            .setScheduled(Timestamp.newBuilder().setSeconds(SCHEDULED.getEpochSecond()).setNanos(SCHEDULED.getNano()))
-            .setDestination(DESTINATION)
-            .setId(ID)
-            .setCreated(Timestamp.newBuilder().setSeconds(CREATED.getEpochSecond()).setNanos(CREATED.getNano()))
-            .setExpires(Timestamp.newBuilder().setSeconds(EXPIRES.getEpochSecond()).setNanos(EXPIRES.getNano()))
-            .setProduced(Timestamp.newBuilder().setSeconds(PRODUCED.getEpochSecond()).setNanos(PRODUCED.getNano()));
+    srm = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
     srpBuilder = Protos.ScheduledRecord.newBuilder()
-        .setMetadata(srmpBuilder)
+        .setMetadata(ByteString.copyFrom(METADATA_SERIALIZER.serialize(srm)))
         .setKey(ByteString.copyFrom(KEY))
         .setValue(ByteString.copyFrom(VALUE))
         .addHeaders(Protos.ScheduledRecordHeader.newBuilder()

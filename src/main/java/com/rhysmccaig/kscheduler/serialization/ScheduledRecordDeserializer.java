@@ -10,6 +10,13 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 public class ScheduledRecordDeserializer implements Deserializer<ScheduledRecord> {
     
+  private static ScheduledRecordMetadataDeserializer METADATA_DESERIALIZER = new ScheduledRecordMetadataDeserializer();
+
+
+  public ScheduledRecord deserialize(byte[] bytes) {
+    return deserialize(null, bytes);
+  }
+
   public ScheduledRecord deserialize(String topic, byte[] bytes) {
     return (bytes == null) ? null : fromBytes(bytes);
   }
@@ -28,7 +35,7 @@ public class ScheduledRecordDeserializer implements Deserializer<ScheduledRecord
     if (proto == null) {
       return null;
     }
-    var metadata = ScheduledRecordMetadataDeserializer.fromProto(proto.getMetadata());
+    var metadata = METADATA_DESERIALIZER.deserialize(proto.getMetadata().toByteArray());
     var key = proto.getKey().isEmpty() ? null : proto.getKey().toByteArray();
     var value = proto.getValue().isEmpty() ? null : proto.getValue().toByteArray();
     var headers = new RecordHeaders();

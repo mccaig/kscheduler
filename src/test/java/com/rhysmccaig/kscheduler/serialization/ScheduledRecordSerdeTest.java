@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
@@ -20,40 +21,48 @@ import org.junit.jupiter.api.Test;
 public class ScheduledRecordSerdeTest {
   
   private static Serde<ScheduledRecord> SERDE = new ScheduledRecordSerde();
-  private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(
-    Instant.EPOCH, "destination", "1234", Instant.MIN, Instant.MAX, Instant.EPOCH.minus(Duration.ofSeconds(5)));
+  private static Deserializer<ScheduledRecord> DESERIALIZER = SERDE.deserializer();
+  private static Serializer<ScheduledRecord> SERIALIZER = SERDE.serializer();
+
+  private static Instant SCHEDULED = Instant.EPOCH;
+  private static Instant EXPIRES = Instant.MAX;
+  private static Instant CREATED = Instant.MIN;
+  private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
+  private static String DESTINATION = "topic";
+  private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
+  private static ScheduledRecordMetadataSerializer METADATAA_SERIALIZER = new ScheduledRecordMetadataSerializer();
+
   private static byte[] KEY = "123456".getBytes(StandardCharsets.UTF_8);
   private static byte[] VALUE = "abcd".getBytes(StandardCharsets.UTF_8);
   private static Headers HEADERS = new RecordHeaders().add(new RecordHeader("7890", "WXYZ".getBytes(StandardCharsets.UTF_8)));
-  private static Deserializer<ScheduledRecord> deserializer = SERDE.deserializer();
-  private static Serializer<ScheduledRecord> serializer = SERDE.serializer();
+
 
 
   @Test
   public void roundtrip() {
     var expected = new ScheduledRecord(METADATA, KEY, VALUE, HEADERS);
-    var actual = deserializer.deserialize(null, serializer.serialize(null, expected));
+    var actual = DESERIALIZER.deserialize(null, SERIALIZER.serialize(null, expected));
     assertEquals(expected, actual);
   }
 
   @Test
   public void roundtrip_no_key() {
     var expected = new ScheduledRecord(METADATA, null, VALUE, HEADERS);
-    var actual = deserializer.deserialize(null, serializer.serialize(null, expected));
+    var actual = DESERIALIZER.deserialize(null, SERIALIZER.serialize(null, expected));
     assertEquals(expected, actual);
   }
 
   @Test
   public void roundtrip_no_value() {
     var expected = new ScheduledRecord(METADATA, KEY, null, HEADERS);
-    var actual = deserializer.deserialize(null, serializer.serialize(null, expected));
+    var actual = DESERIALIZER.deserialize(null, SERIALIZER.serialize(null, expected));
     assertEquals(expected, actual);
   }
 
   @Test
   public void roundtrip_no_headers() {
     var expected = new ScheduledRecord(METADATA, KEY, VALUE, null);
-    var actual = deserializer.deserialize(null, serializer.serialize(null, expected));
+    var actual = DESERIALIZER.deserialize(null, SERIALIZER.serialize(null, expected));
     assertEquals(expected, actual);
   }
 

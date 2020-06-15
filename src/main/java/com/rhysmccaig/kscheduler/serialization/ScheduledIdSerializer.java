@@ -16,6 +16,10 @@ public class ScheduledIdSerializer implements Serializer<ScheduledId> {
   public static int SERIALIZED_SIZE = (1 + INSTANT_SIZE + ID_SIZE);
   private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(SERIALIZED_SIZE));
 
+  public byte[] serialize(ScheduledId data) {
+    return serialize(null, data);
+  }
+
   public byte[] serialize(String topic, ScheduledId data) {
     if (data == null) {
       return null;

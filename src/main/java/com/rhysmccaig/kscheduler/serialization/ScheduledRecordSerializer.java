@@ -11,6 +11,12 @@ import org.apache.kafka.common.serialization.Serializer;
 
 public class ScheduledRecordSerializer implements Serializer<ScheduledRecord> {
 
+  private static ScheduledRecordMetadataSerializer METADATA_SERIALIZER = new ScheduledRecordMetadataSerializer();
+
+  public byte[] serialize(ScheduledRecord data) {
+    return serialize(null, data);
+  }
+
   public byte[] serialize(String topic, ScheduledRecord data) {
     return (data == null) ? null : toBytes(data);
   }
@@ -21,7 +27,7 @@ public class ScheduledRecordSerializer implements Serializer<ScheduledRecord> {
 
   private static Protos.ScheduledRecord toProto(ScheduledRecord record) {
     var builder = Protos.ScheduledRecord.newBuilder()
-        .setMetadata(ScheduledRecordMetadataSerializer.toProto(record.metadata()));
+        .setMetadata(ByteString.copyFrom(METADATA_SERIALIZER.serialize(null, record.metadata())));
     if (Objects.nonNull(record.key()))
       builder.setKey(ByteString.copyFrom(record.key()));
     if (Objects.nonNull(record.value()))

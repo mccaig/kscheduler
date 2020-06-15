@@ -6,8 +6,8 @@ import org.apache.kafka.common.serialization.Serde;
 
 public class ScheduledRecordMetadataSerde implements Serde<ScheduledRecordMetadata> {
   
-  public static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
-  public static ScheduledRecordMetadataSerializer SERIALIZER = new ScheduledRecordMetadataSerializer();
+  private static ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
+  private static ScheduledRecordMetadataSerializer SERIALIZER = new ScheduledRecordMetadataSerializer();
 
   public ScheduledRecordMetadataDeserializer deserializer() {
     return DESERIALIZER;

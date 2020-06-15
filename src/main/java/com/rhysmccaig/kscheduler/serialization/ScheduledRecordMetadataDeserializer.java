@@ -20,6 +20,9 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
   private static int MAXIMUM_SERIALIZED_SIZE = ScheduledRecordMetadataSerializer.MAXIMUM_SERIALIZED_SIZE;
   private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(MAXIMUM_SERIALIZED_SIZE));
 
+  public ScheduledRecordMetadata deserialize(byte[] bytes) {
+    return deserialize(null, bytes);
+  }
 
   public ScheduledRecordMetadata deserialize(String topic, byte[] bytes) {
     if (bytes == null){

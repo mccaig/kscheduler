@@ -18,6 +18,10 @@ public class ScheduledIdDeserializer implements Deserializer<ScheduledId> {
   private static int SERIALIZED_SIZE = ScheduledIdSerializer.SERIALIZED_SIZE;
   private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(SERIALIZED_SIZE));
   
+  public ScheduledId deserialize(byte[] bytes) {
+    return deserialize(null, bytes);
+  }
+
   public ScheduledId deserialize(String topic, byte[] bytes) {
     if (bytes == null){
       return null;

@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataDeserializer;
-import com.rhysmccaig.kscheduler.serdes.ScheduledRecordMetadataSerializer;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataDeserializer;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer;
 
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.header.Header;

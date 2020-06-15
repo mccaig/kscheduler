@@ -21,6 +21,10 @@ public class ScheduledRecordMetadataSerializer implements Serializer<ScheduledRe
   public static int MAXIMUM_SERIALIZED_SIZE = MINIMUM_SERIALIZED_SIZE + MAX_DESTINATION_SIZE;
   private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(MAXIMUM_SERIALIZED_SIZE));
 
+  public byte[] serialize(ScheduledRecordMetadata data) {
+    return serialize(null, data);
+  }
+
   public byte[] serialize(String topic, ScheduledRecordMetadata data) {
     if (data == null) {
       return null;

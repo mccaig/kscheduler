@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.UUID;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
@@ -22,10 +23,16 @@ import org.junit.jupiter.api.Test;
 public class ScheduledRecordDeserializerTest {
   
   private static Instant SCHEDULED = Instant.EPOCH;
-  private static String DESTINATION = "destination";
+  private static Instant EXPIRES = Instant.MAX;
+  private static Instant CREATED = Instant.MIN;
+  private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
+  private static String DESTINATION = "topic";
+  private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
+  private static ScheduledRecordMetadataSerializer METADATAA_SERIALIZER = new ScheduledRecordMetadataSerializer();
+  private static byte[] METADATA_BYTES = METADATAA_SERIALIZER.serialize(METADATA);
+
   private static String HEADER_KEY = "hello";
   private static byte[] HEADER_VALUE = "world".getBytes(StandardCharsets.UTF_8);
-  private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(SCHEDULED, DESTINATION, null, null, null, null);
   private static byte[] KEY = "1234".getBytes(StandardCharsets.UTF_8);
   private static byte[] VALUE = "abcd".getBytes(StandardCharsets.UTF_8);
   private static Headers HEADERS = new RecordHeaders().add(new RecordHeader(HEADER_KEY, HEADER_VALUE));
@@ -37,9 +44,7 @@ public class ScheduledRecordDeserializerTest {
   @BeforeEach
   public void beforeEach() {
     srpBuilder = Protos.ScheduledRecord.newBuilder()
-        .setMetadata(Protos.ScheduledRecordMetadata.newBuilder()
-            .setScheduled(Timestamp.newBuilder().setSeconds(SCHEDULED.getEpochSecond()).setNanos(SCHEDULED.getNano()))
-            .setDestination(DESTINATION))
+        .setMetadata(ByteString.copyFrom(METADATA_BYTES))
         .setKey(ByteString.copyFrom(KEY))
         .setValue(ByteString.copyFrom(VALUE))
         .addHeaders(Protos.ScheduledRecordHeader.newBuilder()
