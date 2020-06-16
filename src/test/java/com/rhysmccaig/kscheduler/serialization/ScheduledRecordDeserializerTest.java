@@ -8,7 +8,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Timestamp;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.protos.Protos;

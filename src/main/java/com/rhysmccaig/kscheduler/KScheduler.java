@@ -21,6 +21,7 @@ import com.rhysmccaig.kscheduler.streams.KSchedulerProductionExceptionHandler;
 import com.rhysmccaig.kscheduler.streams.ScheduledDestinationTopicNameExtractor;
 import com.rhysmccaig.kscheduler.streams.ScheduledToSourceTransformer;
 import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
@@ -58,7 +59,11 @@ public class KScheduler {
     // Set up the producer
     //final var producer = new KafkaProducer<byte[], byte[]>(producerProps);
       
-    final Topology topology = getTopology(topicsConfig.getString("input"), schedulerConfig.getDuration("punctuate.interval"), getStoreBuilder());
+    final Topology topology = getTopology(
+      topicsConfig.getString("input"), 
+      topicsConfig.getString("outgoing"),
+      schedulerConfig.getDuration("punctuate.interval"), 
+      getStoreBuilder());
 
     logger.debug("streams topology: {}", topology.describe());
 
@@ -96,7 +101,8 @@ public class KScheduler {
   }
   
   public static Topology getTopology(
-      String inputTopic, 
+      String inputTopic,
+      String outgoingTopic,
       Duration punctuateInterval,
       StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder) {
     var builder = new StreamsBuilder();
@@ -104,6 +110,7 @@ public class KScheduler {
         .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
         .transform(() -> new SchedulerTransformer(punctuateInterval), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
+        .through(outgoingTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde()))
         .transform(() -> new ScheduledToSourceTransformer(), Named.as("SCHEDULED_TO_SOURCE"))
         .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
     return builder.build();

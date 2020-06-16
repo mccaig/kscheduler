@@ -10,13 +10,13 @@ import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer;
 
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.processor.MockProcessorContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +28,6 @@ public class ScheduledToSourceTransformerTest {
   private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
   private static String DESTINATION = "topic";
   private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
-  private static ScheduledRecordMetadataSerializer METADATA_SERIALIZER = new ScheduledRecordMetadataSerializer();
 
   private static byte[] KEY = "Hello".getBytes(StandardCharsets.UTF_8);
   private static byte[] VALUE = "World!".getBytes(StandardCharsets.UTF_8);
@@ -41,6 +40,11 @@ public class ScheduledToSourceTransformerTest {
     context = new MockProcessorContext();
     transformer = new ScheduledToSourceTransformer();
     transformer.init(context);
+  }
+
+  @AfterEach
+  public void teardown() {
+    transformer.close();
   }
 
   @Test

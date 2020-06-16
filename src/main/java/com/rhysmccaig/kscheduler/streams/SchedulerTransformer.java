@@ -25,10 +25,10 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   public static final String DEFAULT_STATE_STORE_NAME = "kscheduler-scheduled";
   public static final String PROCESSOR_NAME = "kscheduler-processor";
 
-  private final String stateStoreName;
+  private String stateStoreName;
   private ProcessorContext context;
   private KeyValueStore<ScheduledId, ScheduledRecord> kvStore;
-  private final Duration punctuateSchedule;
+  private Duration punctuateSchedule;
 
   public SchedulerTransformer(String stateStoreName, Duration punctuateSchedule) {
     this.stateStoreName = Objects.requireNonNull(stateStoreName);
@@ -81,6 +81,9 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
     return null;
   }
 
-  public void close() {}
+  public void close() {
+    stateStoreName = null;
+    punctuateSchedule = null;
+  }
 
 }

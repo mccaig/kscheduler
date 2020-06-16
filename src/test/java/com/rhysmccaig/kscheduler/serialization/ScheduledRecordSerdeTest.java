@@ -3,7 +3,6 @@ package com.rhysmccaig.kscheduler.serialization;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -30,7 +29,6 @@ public class ScheduledRecordSerdeTest {
   private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
   private static String DESTINATION = "topic";
   private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
-  private static ScheduledRecordMetadataSerializer METADATAA_SERIALIZER = new ScheduledRecordMetadataSerializer();
 
   private static byte[] KEY = "123456".getBytes(StandardCharsets.UTF_8);
   private static byte[] VALUE = "abcd".getBytes(StandardCharsets.UTF_8);

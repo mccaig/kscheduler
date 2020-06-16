@@ -43,6 +43,7 @@ public class KSchedulerTest {
 
 
   private static String INPUT_TOPIC = "inputtopic";
+  private static String OUTGOING_TOPIC = "outgoingtopic";
   private static Duration ONE_MINUTE = Duration.ofMinutes(1);
   private static String OUTPUT_TOPIC_A = "output.topic.a";
   private static String OUTPUT_TOPIC_B = "output.topic.b";
@@ -65,7 +66,7 @@ public class KSchedulerTest {
   @BeforeEach
   public void setup() {
     var storeBuilder = KScheduler.getStoreBuilder();
-    var topology = KScheduler.getTopology(INPUT_TOPIC, ONE_MINUTE, storeBuilder);
+    var topology = KScheduler.getTopology(INPUT_TOPIC, OUTGOING_TOPIC, ONE_MINUTE, storeBuilder);
     // setup test driver
     Properties props = new Properties();
     props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
