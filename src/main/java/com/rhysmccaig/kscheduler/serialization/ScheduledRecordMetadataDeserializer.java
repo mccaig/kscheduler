@@ -27,10 +27,12 @@ public class ScheduledRecordMetadataDeserializer implements Deserializer<Schedul
   public ScheduledRecordMetadata deserialize(String topic, byte[] bytes) {
     if (bytes == null){
       return null;
-    } else if (bytes.length < MINIMUM_SERIALIZED_SIZE){
+    } else if (bytes.length < MINIMUM_SERIALIZED_SIZE) {
       throw new SerializationException("Not enough bytes to be ScheduledRecordMetadata");
+    } else if (bytes.length > MAXIMUM_SERIALIZED_SIZE) {
+      throw new SerializationException("Too many bytes to be ScheduledRecordMetadata");
     }
-    var buffer = TL_BUFFER.get().position(0);
+    var buffer = TL_BUFFER.get().clear();
     buffer.put(bytes).flip();
     var version = buffer.get();
     if (version != VERSION_BYTE) {

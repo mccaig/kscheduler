@@ -1,5 +1,6 @@
 package com.rhysmccaig.kscheduler.serialization;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.nio.ByteBuffer;
@@ -36,6 +37,7 @@ public class ScheduledRecordMetadataSerdeTest {
   @Test
   public void roundtrip_reverse() {
     var buffer = ByteBuffer.allocate(ScheduledRecordMetadataSerializer.MAXIMUM_SERIALIZED_SIZE);
+    buffer.put(ScheduledRecordMetadataSerializer.VERSION_BYTE);
     putOrderedBytes(buffer, SCHEDULED);
     putOrderedBytes(buffer, EXPIRES);
     putOrderedBytes(buffer, CREATED);
@@ -45,7 +47,7 @@ public class ScheduledRecordMetadataSerdeTest {
     var expected = new byte[buffer.limit()];
     buffer.get(expected);
     var actual = SERIALIZER.serialize(null, DESERIALIZER.deserialize(null, expected));
-    assertEquals(expected, actual);
+    assertArrayEquals(expected, actual);
   }
 
 }

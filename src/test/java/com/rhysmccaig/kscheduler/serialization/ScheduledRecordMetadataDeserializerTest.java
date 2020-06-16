@@ -36,16 +36,16 @@ public class ScheduledRecordMetadataDeserializerTest {
 
   @BeforeEach
   public void beforeEach() {
-    putOrderedBytes(buffer, SCHEDULED).flip().get(scheduledBytes);
-    putOrderedBytes(buffer, EXPIRES).flip().get(expiresBytes);
-    putOrderedBytes(buffer, CREATED).flip().get(createdBytes);
-    putOrderedBytes(buffer, ID).flip().get(idBytes);
+    putOrderedBytes(buffer.clear(), SCHEDULED).flip().get(scheduledBytes);
+    putOrderedBytes(buffer.clear(), EXPIRES).flip().get(expiresBytes);
+    putOrderedBytes(buffer.clear(), CREATED).flip().get(createdBytes);
+    putOrderedBytes(buffer.clear(), ID).flip().get(idBytes);
     destinationBytes = DESTINATION.getBytes(StandardCharsets.UTF_8);
   }
 
   @Test
   public void desserialize() {
-    buffer.position(0)
+    buffer.clear()
           .put(ScheduledRecordMetadataSerializer.VERSION_BYTE)
           .put(scheduledBytes)
           .put(expiresBytes)
@@ -81,7 +81,7 @@ public class ScheduledRecordMetadataDeserializerTest {
 
   @Test
   public void desserialize_bad_version_throws() {
-    buffer.position(0)
+    buffer.clear()
           .put((byte) 0x55)
           .put(scheduledBytes)
           .put(expiresBytes)

@@ -2,14 +2,11 @@ package com.rhysmccaig.kscheduler.streams;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer;
 
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.streams.processor.StreamPartitioner;
 
 public class SourceKeyDefaultStreamPartitioner implements StreamPartitioner<ScheduledRecordMetadata, ScheduledRecord> {
-
-    final ScheduledRecordMetadataSerializer serializer = new ScheduledRecordMetadataSerializer();
 
     @Override
     public Integer partition(final String topic, final ScheduledRecordMetadata key, final ScheduledRecord value, final int numPartitions) {

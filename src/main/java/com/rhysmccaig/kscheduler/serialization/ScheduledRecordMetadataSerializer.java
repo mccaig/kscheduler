@@ -29,7 +29,7 @@ public class ScheduledRecordMetadataSerializer implements Serializer<ScheduledRe
     if (data == null) {
       return null;
     } else {
-      var buffer = TL_BUFFER.get().position(0);
+      var buffer = TL_BUFFER.get().clear();
       buffer.put(VERSION_BYTE);
       putOrderedBytes(buffer, data.scheduled());
       putOrderedBytes(buffer, data.expires());

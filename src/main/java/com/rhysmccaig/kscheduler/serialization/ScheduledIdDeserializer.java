@@ -28,7 +28,7 @@ public class ScheduledIdDeserializer implements Deserializer<ScheduledId> {
     } else if (bytes.length != SERIALIZED_SIZE){
       throw new SerializationException("Invalid byte count!");
     }
-    var buffer = TL_BUFFER.get().position(0);
+    var buffer = TL_BUFFER.get().clear();
     buffer.put(bytes).flip();
     var version = buffer.get();
     if (version != VERSION_BYTE) {

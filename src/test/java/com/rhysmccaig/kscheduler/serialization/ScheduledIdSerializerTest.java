@@ -33,15 +33,4 @@ public class ScheduledIdSerializerTest {
     assertArrayEquals(expected, actual);
   }
 
-  @Test
-  public void serialize_no_id() {
-    var buffer = ByteBuffer.allocate(13)
-        .put(ScheduledIdSerializer.VERSION_BYTE)
-        .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()))
-        .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()));
-    var expected = buffer.array();
-    var record = new ScheduledId(SCHEDULED, null);
-    var actual = SERIALIZER.serialize(null, record);
-    assertArrayEquals(expected, actual);
-  }
 }

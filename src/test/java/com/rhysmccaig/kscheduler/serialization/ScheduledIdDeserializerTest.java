@@ -36,15 +36,13 @@ public class ScheduledIdDeserializerTest {
   }
 
   @Test
-  public void deserialize_no_id() {
+  public void deserialize_no_id_throws() {
     var buffer = ByteBuffer.allocate(13)
       .put(ScheduledIdSerializer.VERSION_BYTE)
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getEpochSecond()))
       .put(SerializationUtils.toOrderedBytes(SCHEDULED.getNano()));
     var bytes = buffer.array();
-    var expected = new ScheduledId(SCHEDULED, null);
-    var actual = DESERIALIZER.deserialize(null, bytes);
-    assertEquals(expected, actual);
+    assertThrows(SerializationException.class, () -> DESERIALIZER.deserialize(null, bytes));
   }
 
   @Test

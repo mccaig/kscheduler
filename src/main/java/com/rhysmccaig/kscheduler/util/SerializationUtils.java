@@ -86,9 +86,9 @@ public class SerializationUtils {
   public static Instant getInstant(ByteBuffer buffer) {
     byte[] secondsBytes = new byte[Long.BYTES];
     byte[] nanosBytes = new byte[Integer.BYTES];
-    buffer.get(secondsBytes).get(nanosBytes);
+    buffer.get(secondsBytes)
+          .get(nanosBytes);
     var seconds = SerializationUtils.longFromOrderedBytes(secondsBytes);
-    buffer.get(nanosBytes);
     var nanos = SerializationUtils.intFromOrderedBytes(nanosBytes);
     // This will throw a DatetimeException if the long value representing seconds 
     // is out of the range supported by an Instant

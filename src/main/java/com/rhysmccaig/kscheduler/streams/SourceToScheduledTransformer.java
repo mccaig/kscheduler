@@ -1,8 +1,5 @@
 package com.rhysmccaig.kscheduler.streams;
 
-import java.util.Objects;
-import java.util.UUID;
-
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
@@ -32,14 +29,14 @@ public class SourceToScheduledTransformer
   public KeyValue<ScheduledRecordMetadata, ScheduledRecord> transform(Bytes key, Bytes value) {
     var headers = this.context.headers();
     var metadata = HeaderUtils.extractMetadata(headers, true);
-    if (metadata == null) {
-      if (logger.isDebugEnabled()) {
-        var tpo = new TopicPartitionOffset(context.topic(), context.partition(), context.offset());
-        logger.debug("No scheduler metadata found for message: {}, dropping message.", tpo);
-      }
-      return null;
+    if (metadata != null) {
+      var record = new ScheduledRecord(metadata, key.get(), value.get(), headers);
+      context.forward(metadata, record);
+    } else if (logger.isDebugEnabled()) {
+      var tpo = new TopicPartitionOffset(context.topic(), context.partition(), context.offset());
+      logger.debug("No scheduler metadata found for message: {}, dropping message.", tpo);
     }
-    return new KeyValue<ScheduledRecordMetadata, ScheduledRecord>(metadata, new ScheduledRecord(metadata, key.get(), value.get(), headers));
+    return null; 
   }
 
 
