@@ -3,6 +3,7 @@ package com.rhysmccaig.kscheduler.streams;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
@@ -24,6 +25,8 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   public static final Duration DEFAULT_PUNCTUATE_INTERVAL = Duration.ofSeconds(5);
   public static final String DEFAULT_STATE_STORE_NAME = "kscheduler-scheduled";
   public static final String PROCESSOR_NAME = "kscheduler-processor";
+  private static final UUID MIN_UUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+  private static final UUID MAX_UUID = UUID.fromString("ffffffff-ffff-ffff-ffff-ffffffffffff");
 
   private String stateStoreName;
   private ProcessorContext context;
@@ -51,9 +54,10 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
     // schedule a punctuate() based on wall-clock time
     this.context.schedule(punctuateSchedule, PunctuationType.WALL_CLOCK_TIME, (timestamp) -> {
       var notBeforeInstant = Instant.ofEpochMilli(timestamp);
-      var beforeInstant = Instant.ofEpochMilli(timestamp).plus(punctuateSchedule);
-      var from = new ScheduledId(notBeforeInstant, null);
-      var to = new ScheduledId(beforeInstant, null);
+      var beforeInstant = Instant.ofEpochMilli(timestamp).plus(punctuateSchedule).minusNanos(1);
+      // Consider allowing scheduledId to be null so we dont have to do this
+      var from = new ScheduledId(notBeforeInstant, MIN_UUID);
+      var to = new ScheduledId(beforeInstant, MAX_UUID);
       // Cant yet define our insertion order, but by default RocksDB orders items lexicographically
       // ScheduledIdSerializer takes this into account
       KeyValueIterator<ScheduledId, ScheduledRecord> iter = this.kvStore.range(from, to);
