@@ -3,6 +3,7 @@ package com.rhysmccaig.kscheduler;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -58,9 +59,6 @@ public class KSchedulerTest {
   private TestOutputTopic<byte[], byte[]> outputTopicA;
   private TestOutputTopic<byte[], byte[]> outputTopicB;
   private KeyValueStore<ScheduledId, ScheduledRecord> kvStore;
-  private Clock clock;
-  private final Instant recordBaseTime = Instant.EPOCH;
-  private Instant now; 
 
   private ScheduledRecordMetadata metadataScheduledIn1Min;
   
@@ -69,6 +67,8 @@ public class KSchedulerTest {
   public void setup() {
     var storeBuilder = KScheduler.getStoreBuilder();
     var topology = KScheduler.getTopology(INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, ONE_MINUTE, storeBuilder);
+    // As our topology routes output records dynamically, the topics we are testing are not initialized in TopologyTestDriver
+    // Unless we create a dummy sub-topology and add them to it
     topology.addSource("DUMMY_SOURCE", "dummy");
     topology.addSink("DUMMY_OUTPUT_A", OUTPUT_TOPIC_A, "DUMMY_SOURCE");
     topology.addSink("DUMMY_OUTPUT_B", OUTPUT_TOPIC_B, "DUMMY_SOURCE");
@@ -81,9 +81,7 @@ public class KSchedulerTest {
     kvStore = testDriver.getKeyValueStore(storeBuilder.name());
     outputTopicA = testDriver.createOutputTopic(OUTPUT_TOPIC_A, new ByteArrayDeserializer(), new ByteArrayDeserializer());
     outputTopicB = testDriver.createOutputTopic(OUTPUT_TOPIC_B, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-    clock = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault());
-    now = Instant.now(clock);
-    metadataScheduledIn1Min = new ScheduledRecordMetadata(now.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
+    metadataScheduledIn1Min = new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
   }
 
   @AfterEach
@@ -99,17 +97,10 @@ public class KSchedulerTest {
         key, 
         value, 
         new RecordHeaders().add(new RecordHeader("Header", "HeaderValue".getBytes(StandardCharsets.UTF_8))),
-        now);
+        Instant.EPOCH);
     inputTopic.pipeInput(testRecord);
-    var it = kvStore.all();
-    while (it.hasNext()) {
-      System.out.println(it.next());
-    }
-    assertFalse(kvStore.all().hasNext());   
-    //Read value and validate it, ignore validation of kafka key, timestamp is irrelevant in this case
-    assert(outputTopicA.readValue() != null);
-    //No more output in topic
-    assert(outputTopicA.isEmpty());
+    assertFalse(kvStore.all().hasNext());  
+    assertTrue(outputTopicA.isEmpty());
   }
 
   @Test
@@ -125,7 +116,7 @@ public class KSchedulerTest {
     var headers = new RecordHeaders();
     headers.add(otherHeader);
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
-    var testRecord = new TestRecord<byte[], byte[]>(key, value, headers, now);
+    var testRecord = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
     inputTopic.pipeInput(testRecord);
     // Expect one record to be in the kvStore after the first record is input
     // No record propogated downstream
@@ -159,7 +150,7 @@ public class KSchedulerTest {
     // Advance the clock another 30 seconds - record is scheduled for this time
     // Expect the record to be removed from the kvStore and propogated downstream
     // Output record should have 2 headers - one for the destination, and the other existing header
-    testDriver.advanceWallClockTime(Duration.ofSeconds(90));
+    testDriver.advanceWallClockTime(Duration.ofSeconds(30));
     assertFalse(kvStore.all().hasNext());
     assertFalse(outputTopicA.isEmpty());
     var outputRecord = outputTopicA.readRecord();
