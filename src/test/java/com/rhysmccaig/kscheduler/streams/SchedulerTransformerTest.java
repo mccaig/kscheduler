@@ -25,7 +25,6 @@ import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.TestInputTopic;
@@ -34,7 +33,6 @@ import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.processor.MockProcessorContext;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.Stores;
 import org.apache.kafka.streams.test.TestRecord;
@@ -66,7 +64,6 @@ public class SchedulerTransformerTest {
   private KeyValueStore<ScheduledId, ScheduledRecord> kvStore;
 
   private SchedulerTransformer transformer;
-  private MockProcessorContext context;
 
   @BeforeEach
   public void setup() {
@@ -94,7 +91,7 @@ public class SchedulerTransformerTest {
 
   @AfterEach
   public void teardown() {
-    transformer.close();
+    testDriver.close();
   }
 
   @Test
@@ -155,6 +152,124 @@ public class SchedulerTransformerTest {
     var outputRecord = outTopic.readRecord();
     assertEquals(metadata, outputRecord.getKey());
     assertEquals(record, outputRecord.getValue());
+  }
+
+  @Test
+  public void existingScheduledRecordIsForwardedAtScheduledTime() {
+    // Record scheduled in one minute
+    var scheduled = Instant.EPOCH.plus(Duration.ofMinutes(1));
+    var expires = Instant.EPOCH;
+    var created = Instant.MIN;
+    var id = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
+    var destination = "destination.topic";
+    var metadata = new ScheduledRecordMetadata(scheduled, expires, created, id, destination);
+    // Record
+    var sourceKey = "Hello".getBytes(StandardCharsets.UTF_8);
+    var sourceValue = "World!".getBytes(StandardCharsets.UTF_8);
+    var record = new ScheduledRecord(metadata, sourceKey, sourceValue, null);
+    var scheduledId = new ScheduledId(scheduled, id);
+    // Pre populate the store
+    kvStore.put(scheduledId, record);
+    // Expect that there is a record in the kvStore
+    var kvStoreIt = kvStore.all();
+    var countEntries = 0;
+    while(kvStoreIt.hasNext()) {
+      countEntries++;
+      kvStoreIt.next();
+    }
+    assertEquals(1, countEntries);
+    assertTrue(outTopic.isEmpty());
+    // record should remain in the store after 30 seconds
+    testDriver.advanceWallClockTime(Duration.ofSeconds(30));
+    kvStoreIt = kvStore.all();
+    countEntries = 0;
+    while(kvStoreIt.hasNext()) {
+      countEntries++;
+      kvStoreIt.next();
+    }
+    assertEquals(1, countEntries);
+    assertTrue(outTopic.isEmpty());
+    // Record should be propogated downstream after another 30 seconds (Instant.EPOCH.plus(Duration.ofMinutes(1)))
+    testDriver.advanceWallClockTime(Duration.ofSeconds(30));
+    kvStoreIt = kvStore.all();
+    assertFalse(kvStoreIt.hasNext());
+    assertFalse(outTopic.isEmpty());
+    var outputRecord = outTopic.readRecord();
+    assertEquals(metadata, outputRecord.getKey());
+    assertEquals(record, outputRecord.getValue());
+  }
+
+  @Test
+  public void expiredRecordIsDropped() {
+    // Record scheduled in one minute
+    var scheduled = Instant.EPOCH.plus(Duration.ofMinutes(1));
+    var expires = Instant.EPOCH;
+    var created = Instant.MIN;
+    var id = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
+    var destination = "destination.topic";
+    var metadata = new ScheduledRecordMetadata(scheduled, expires, created, id, destination);
+    // Record
+    var sourceKey = "Hello".getBytes(StandardCharsets.UTF_8);
+    var sourceValue = "World!".getBytes(StandardCharsets.UTF_8);
+    var record = new ScheduledRecord(metadata, sourceKey, sourceValue, null);
+    var testRecord = new TestRecord<ScheduledRecordMetadata, ScheduledRecord>(metadata, record, null, TEST_START_TIME);
+    // Test
+    inTopic.pipeInput(testRecord);
+    // Expect that there is no record persisted in the KV store and no record propogated downstream, its just dropped.
+    assertFalse(kvStore.all().hasNext());
+    assertTrue(outTopic.isEmpty());
+  }
+
+  @Test
+  public void existingIdShouldBeUpdatedWithNewMetadataAndRecord() {
+    // Record scheduled in one minute
+    var initialScheduled = Instant.EPOCH.plus(Duration.ofMinutes(5));
+    var updatedScheduled = Instant.EPOCH.plus(Duration.ofMinutes(1));
+    var expires = Instant.EPOCH;
+    var created = Instant.MIN;
+    var id = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
+    var destination = "destination.topic";
+    var initialMetadata = new ScheduledRecordMetadata(initialScheduled, expires, created, id, destination);
+    var updatedMetadata = new ScheduledRecordMetadata(updatedScheduled, expires, created, id, destination);
+    // Records
+    var sourceKey = "Hello".getBytes(StandardCharsets.UTF_8);
+    var initialSourceValue = "World!".getBytes(StandardCharsets.UTF_8);
+    var updatedSourceValue = "Universe!".getBytes(StandardCharsets.UTF_8);
+    var initialRecord = new ScheduledRecord(initialMetadata, sourceKey, initialSourceValue, null);
+    var updatedRecord = new ScheduledRecord(updatedMetadata, sourceKey, updatedSourceValue, null);
+    var initialScheduledId = new ScheduledId(initialScheduled, id);
+    // Add the initial record into the store
+    kvStore.put(initialScheduledId, initialRecord);
+    // Updated record to send to topology
+    var testRecord = new TestRecord<ScheduledRecordMetadata, ScheduledRecord>(updatedMetadata, updatedRecord, null, TEST_START_TIME);
+    // Test
+    var kvStoreIt = kvStore.all();
+    var countEntries = 0;
+    while(kvStoreIt.hasNext()) {
+      countEntries++;
+      kvStoreIt.next();
+    }
+    assertEquals(1, countEntries);
+    assertTrue(outTopic.isEmpty());
+    inTopic.pipeInput(testRecord);
+    // Expect that there is one record persisted in the KV store and no record propogated downstream
+    // new record should be in the store
+    kvStoreIt = kvStore.all();
+    countEntries = 0;
+    while(kvStoreIt.hasNext()) {
+      countEntries++;
+      kvStoreIt.next();
+    }
+    assertEquals(1, countEntries);
+    assertTrue(outTopic.isEmpty());
+    // After one minute the new record should be propogated downstream
+    testDriver.advanceWallClockTime(Duration.ofMinutes(1));
+    kvStoreIt = kvStore.all();
+    assertFalse(kvStoreIt.hasNext());
+    assertFalse(outTopic.isEmpty());
+    var outputRecord = outTopic.readRecord();
+    assertEquals(updatedMetadata, outputRecord.getKey());
+    assertEquals(updatedRecord, outputRecord.getValue());
   }
 
 

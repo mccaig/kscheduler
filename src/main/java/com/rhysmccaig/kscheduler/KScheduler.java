@@ -61,6 +61,7 @@ public class KScheduler {
       
     final Topology topology = getTopology(
       topicsConfig.getString("input"), 
+      topicsConfig.getString("scheduled"),
       topicsConfig.getString("outgoing"),
       schedulerConfig.getDuration("punctuate.interval"), 
       getStoreBuilder());
@@ -102,6 +103,7 @@ public class KScheduler {
   
   public static Topology getTopology(
       String inputTopic,
+      String scheduledTopic,
       String outgoingTopic,
       Duration punctuateInterval,
       StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder) {
@@ -109,6 +111,7 @@ public class KScheduler {
     builder.addStateStore(storeBuilder)
         .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
+        .through(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde(), partitioner))
         .transform(() -> new SchedulerTransformer(punctuateInterval), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
         .through(outgoingTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde()))
         .transform(() -> new ScheduledToSourceTransformer(), Named.as("SCHEDULED_TO_SOURCE"))
