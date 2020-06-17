@@ -19,6 +19,7 @@ import com.rhysmccaig.kscheduler.streams.SchedulerTransformer;
 import com.rhysmccaig.kscheduler.streams.SourceToScheduledTransformer;
 import com.rhysmccaig.kscheduler.streams.KSchedulerProductionExceptionHandler;
 import com.rhysmccaig.kscheduler.streams.ScheduledDestinationTopicNameExtractor;
+import com.rhysmccaig.kscheduler.streams.ScheduledRecordIdPartitioner;
 import com.rhysmccaig.kscheduler.streams.ScheduledToSourceTransformer;
 import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
@@ -111,9 +112,9 @@ public class KScheduler {
     builder.addStateStore(storeBuilder)
         .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(() -> new SourceToScheduledTransformer(), Named.as("SOURCE_TO_SCHEDULED"))
-        .through(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde(), partitioner))
+        .through(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde(), new ScheduledRecordIdPartitioner()))
         .transform(() -> new SchedulerTransformer(punctuateInterval), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
-        .through(outgoingTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde()))
+        .through(outgoingTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde(), new ScheduledRecordIdPartitioner()))
         .transform(() -> new ScheduledToSourceTransformer(), Named.as("SCHEDULED_TO_SOURCE"))
         .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
     return builder.build();

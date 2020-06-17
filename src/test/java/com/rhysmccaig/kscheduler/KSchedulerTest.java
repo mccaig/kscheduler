@@ -16,6 +16,7 @@ import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
+import com.rhysmccaig.kscheduler.streams.SchedulerTransformer;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
 
 import org.apache.kafka.common.header.internals.RecordHeader;
@@ -43,6 +44,7 @@ public class KSchedulerTest {
 
 
   private static String INPUT_TOPIC = "inputtopic";
+  private static String SCHEDULED_TOPIC = "scheduledtopic";
   private static String OUTGOING_TOPIC = "outgoingtopic";
   private static Duration ONE_MINUTE = Duration.ofMinutes(1);
   private static String OUTPUT_TOPIC_A = "output.topic.a";
@@ -66,7 +68,10 @@ public class KSchedulerTest {
   @BeforeEach
   public void setup() {
     var storeBuilder = KScheduler.getStoreBuilder();
-    var topology = KScheduler.getTopology(INPUT_TOPIC, OUTGOING_TOPIC, ONE_MINUTE, storeBuilder);
+    var topology = KScheduler.getTopology(INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, ONE_MINUTE, storeBuilder);
+    topology.addSource("DUMMY_SOURCE", "dummy");
+    topology.addSink("DUMMY_OUTPUT_A", OUTPUT_TOPIC_A, "DUMMY_SOURCE");
+    topology.addSink("DUMMY_OUTPUT_B", OUTPUT_TOPIC_B, "DUMMY_SOURCE");
     // setup test driver
     Properties props = new Properties();
     props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
@@ -75,10 +80,10 @@ public class KSchedulerTest {
     inputTopic = testDriver.createInputTopic(INPUT_TOPIC, new ByteArraySerializer(), new ByteArraySerializer());
     kvStore = testDriver.getKeyValueStore(storeBuilder.name());
     outputTopicA = testDriver.createOutputTopic(OUTPUT_TOPIC_A, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+    outputTopicB = testDriver.createOutputTopic(OUTPUT_TOPIC_B, new ByteArrayDeserializer(), new ByteArrayDeserializer());
     clock = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault());
     now = Instant.now(clock);
     metadataScheduledIn1Min = new ScheduledRecordMetadata(now.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
-    outputTopicB = testDriver.createOutputTopic(OUTPUT_TOPIC_B, new ByteArrayDeserializer(), new ByteArrayDeserializer());
   }
 
   @AfterEach
@@ -101,11 +106,10 @@ public class KSchedulerTest {
       System.out.println(it.next());
     }
     assertFalse(kvStore.all().hasNext());   
-    //testDriver.readOutput(OUTPUT_TOPIC_A).
     //Read value and validate it, ignore validation of kafka key, timestamp is irrelevant in this case
-    //assert(outputTopicA.readValue() != null);
+    assert(outputTopicA.readValue() != null);
     //No more output in topic
-    //assert(outputTopicA.isEmpty());
+    assert(outputTopicA.isEmpty());
   }
 
   @Test
