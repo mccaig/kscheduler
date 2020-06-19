@@ -12,7 +12,7 @@ public class ScheduledId {
 
   public ScheduledId(Instant scheduled, UUID id) {
     this.scheduled = Objects.requireNonNull(scheduled, "scheduled must not be null");
-    this.id = Objects.requireNonNull(id, "id must not be null");
+    this.id = id;
   }
 
   public Instant scheduled() {
