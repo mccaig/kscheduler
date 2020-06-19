@@ -18,7 +18,6 @@ import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.checkerframework.checker.units.qual.s;
 
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
@@ -36,7 +35,6 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   public static final String DEFAULT_STATE_STORE_NAME = "kscheduler-scheduled";
   public static final String PROCESSOR_NAME = "kscheduler-processor";
 
-  private String stateStoreName;
   private ProcessorContext context;
   private KeyValueStore<ScheduledId, ScheduledRecord> kvStore;
   private Duration punctuateSchedule;
@@ -52,7 +50,6 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void init(ProcessorContext ctx) {
     context = ctx;
     idLookupMap = new HashMap<>(LOOKUP_TABLE_INITIAL_CAPACITY, LOOKUP_TABLE_LOAD_FACTOR);
@@ -87,7 +84,8 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   }
 
   public void close() {
-    stateStoreName = null;
+    context = null;
+    kvStore = null;
     punctuateSchedule = null;
     idLookupMap = null;
   }
@@ -95,7 +93,7 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
 
   private class SchedulerRestoreCallback extends AbstractNotifyingBatchingRestoreCallback {
 
-    private ScheduledIdDeserializer DESERIALIZER = new ScheduledIdDeserializer();
+    private ScheduledIdDeserializer deserializer = new ScheduledIdDeserializer();
 
     /**
      * Restore the ID->ScheduledId lookup table
@@ -104,7 +102,7 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
     public void restoreAll(Collection<KeyValue<byte[],byte[]>> storeRecords) {
       for(var record : storeRecords) {
         try {
-          var sid = DESERIALIZER.deserialize(record.key);
+          var sid = deserializer.deserialize(record.key);
           // Make sure we have a valid record
           if (sid.id() != null) {
             idLookupMap.put(sid.id(), sid);
