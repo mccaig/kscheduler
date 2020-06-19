@@ -65,7 +65,7 @@ public class KScheduler {
       topicsConfig.getString("scheduled"),
       topicsConfig.getString("outgoing"),
       schedulerConfig.getDuration("punctuate.interval"), 
-      getStoreBuilder().build());
+      getStoreBuilder());
 
     logger.debug("streams topology: {}", topology.describe());
 
@@ -107,13 +107,13 @@ public class KScheduler {
       String scheduledTopic,
       String outgoingTopic,
       Duration punctuateInterval,
-      KeyValueStore<ScheduledId, ScheduledRecord> store) {
+      StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> storeBuilder) {
     var builder = new StreamsBuilder();
     builder.addStateStore(storeBuilder)
         .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(SourceToScheduledTransformer::new, Named.as("SOURCE_TO_SCHEDULED"))
         .through(scheduledTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde(), new ScheduledRecordIdPartitioner()))
-        .transform(() -> new SchedulerTransformer(punctuateInterval), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
+        .transform(() -> new SchedulerTransformer(storeBuilder.build(), punctuateInterval), Named.as("SCHEDULER"), SchedulerTransformer.DEFAULT_STATE_STORE_NAME)
         .through(outgoingTopic, Produced.with(new ScheduledRecordMetadataSerde(), new ScheduledRecordSerde(), new ScheduledRecordIdPartitioner()))
         .transform(ScheduledToSourceTransformer::new, Named.as("SCHEDULED_TO_SOURCE"))
         .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
