@@ -1,7 +1,6 @@
 package com.rhysmccaig.kscheduler.streams;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
@@ -25,8 +24,7 @@ public class ScheduledRecordIdPartitioner implements StreamPartitioner<Scheduled
           .putLong(key.id().getLeastSignificantBits())
           .flip()
           .get(idBytes); 
-    var partition = Utils.toPositive(Utils.murmur2(idBytes)) % numPartitions;
-    return partition;
+    return Utils.toPositive(Utils.murmur2(idBytes)) % numPartitions;
   }
 
 }

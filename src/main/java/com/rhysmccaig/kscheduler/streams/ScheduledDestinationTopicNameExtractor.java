@@ -13,8 +13,7 @@ public class ScheduledDestinationTopicNameExtractor implements TopicNameExtracto
   @Override
   public String extract(Bytes key, Bytes value, RecordContext recordContext) {
     var destinationHeader = recordContext.headers().lastHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY);
-    var topic = (destinationHeader == null) ? null : new String(destinationHeader.value(), StandardCharsets.UTF_8);
-    return topic;
+    return (destinationHeader == null) ? null : new String(destinationHeader.value(), StandardCharsets.UTF_8);
   }
   
   

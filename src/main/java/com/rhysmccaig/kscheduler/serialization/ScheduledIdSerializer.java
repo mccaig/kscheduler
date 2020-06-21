@@ -10,11 +10,11 @@ import org.apache.kafka.common.serialization.Serializer;
 
 public class ScheduledIdSerializer implements Serializer<ScheduledId> {
 
-  public static byte VERSION_BYTE = 0x00;
-  private static int INSTANT_SIZE = Long.BYTES + Integer.BYTES;
-  private static int ID_SIZE = Long.BYTES + Long.BYTES;
-  public static int MIN_SERIALIZED_SIZE = 1 + INSTANT_SIZE;
-  public static int MAX_SERIALIZED_SIZE = MIN_SERIALIZED_SIZE + ID_SIZE;
+  public static final byte VERSION_BYTE = 0x00;
+  private static final int INSTANT_SIZE = Long.BYTES + Integer.BYTES;
+  private static final int ID_SIZE = Long.BYTES + Long.BYTES;
+  public static final int MIN_SERIALIZED_SIZE = 1 + INSTANT_SIZE;
+  public static final int MAX_SERIALIZED_SIZE = MIN_SERIALIZED_SIZE + ID_SIZE;
 
   private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(MAX_SERIALIZED_SIZE));
 

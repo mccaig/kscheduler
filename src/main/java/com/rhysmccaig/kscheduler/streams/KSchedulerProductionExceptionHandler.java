@@ -13,16 +13,18 @@ public class KSchedulerProductionExceptionHandler implements ProductionException
   static final Logger logger = LogManager.getLogger(KSchedulerProductionExceptionHandler.class); 
 
   @Override
-  public void configure(Map<String, ?> configs) {}
+  public void configure(Map<String, ?> configs) {
+      // Nothing to Configure
+  }
 
   @Override
   public ProductionExceptionHandlerResponse handle(ProducerRecord<byte[], byte[]> record, Exception exception) {
     var topicPartition = new TopicPartition(record.topic(), record.partition());
     if (exception instanceof UnknownTopicOrPartitionException) {
-      logger.warn("Unknown TopicPartition: {}, dropping ({} bytes) message with key: {}, ", topicPartition, record.value().length, record.key());
+      logger.warn("Unknown TopicPartition: {}, dropping ({} bytes) message with key: {}, ", topicPartition, record.value().length, record.key(), exception);
       return ProductionExceptionHandlerResponse.CONTINUE;
     } else {
-      logger.fatal("ProductionException while producing to TopicPartition: {}, ({} bytes) message with key: {}. Exception: {}", topicPartition, record.value().length, record.key(), exception);
+      logger.fatal("ProductionException while producing to TopicPartition: {}, ({} bytes) message with key: {}.", topicPartition, record.value().length, record.key(), exception);
       return ProductionExceptionHandlerResponse.FAIL;
     }
   }

@@ -6,14 +6,13 @@ import java.util.UUID;
 
 public class SerializationUtils {
 
-  private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(0));
-
+  private SerializationUtils() {}
 
   // returns a byte array representing a long value
   // the most significant bit is flipped so that the resulting
   // byte array will sort lexicographically
   public static byte[] toOrderedBytes(long val) {
-    byte[] bytes = new byte[] {
+    return new byte[] {
       (byte) ((val >> 56) ^ 0x80),
       (byte) (val >> 48),
       (byte) (val >> 40),
@@ -23,20 +22,18 @@ public class SerializationUtils {
       (byte) (val >> 8),
       (byte) val
     };
-    return bytes;
   }
 
   // returns a byte array representing a int value
   // the most significant bit is flipped so that the resulting
   // byte array can be compared lexicographically
   public static byte[] toOrderedBytes(int val) {
-    byte[] bytes = new byte[] {
+    return new byte[] {
       (byte) ((val >> 24) ^ 0x80),
       (byte) (val >> 16),
       (byte) (val >> 8),
       (byte) val
     };
-    return bytes;
   }
 
   // returns a long from a byte array that has been constructed

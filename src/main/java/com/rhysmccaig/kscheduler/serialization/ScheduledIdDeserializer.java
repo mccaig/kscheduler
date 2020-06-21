@@ -15,7 +15,7 @@ import org.apache.kafka.common.serialization.Deserializer;
 
 public class ScheduledIdDeserializer implements Deserializer<ScheduledId> {
     
-  private static byte VERSION_BYTE = ScheduledIdSerializer.VERSION_BYTE;
+  private static final byte VERSION_BYTE = ScheduledIdSerializer.VERSION_BYTE;
   private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(ScheduledIdSerializer.MAX_SERIALIZED_SIZE));
   
   public ScheduledId deserialize(byte[] bytes) {
