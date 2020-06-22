@@ -15,7 +15,6 @@ import java.util.UUID;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
 
