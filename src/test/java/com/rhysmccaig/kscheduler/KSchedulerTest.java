@@ -22,7 +22,6 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.StreamsConfig;
@@ -48,7 +47,6 @@ public class KSchedulerTest {
   private static Duration ONE_MINUTE = Duration.ofMinutes(1);
   private static String OUTPUT_TOPIC_A = "output.topic.a";
   private static String OUTPUT_TOPIC_B = "output.topic.b";
-  private static String OUTPUT_TOPIC_UNKNOWN = "output.topic.unknown";
 
   private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
 
@@ -208,6 +206,5 @@ public class KSchedulerTest {
     testDriver.advanceWallClockTime(Duration.ofMinutes(1));
     assertTrue(outputTopicA.isEmpty());
   }
-
 
 }
