@@ -39,7 +39,6 @@ public class KSchedulerTest {
   
   private static Serde<ScheduledRecordMetadata> METADATA_SERDE = new ScheduledRecordMetadataSerde();
   private static Serializer<ScheduledRecordMetadata> METADATA_SERIALIZER = METADATA_SERDE.serializer();
-  private static Deserializer<ScheduledRecordMetadata> METADATA_DESERIALIZER = METADATA_SERDE.deserializer();
 
   private static Duration PUNCTUATE_DURATION = Duration.ofSeconds(1);
 
@@ -107,60 +106,108 @@ public class KSchedulerTest {
   public void recordIsForwardedAtScheduledTime() {
     var key = "Hello".getBytes(StandardCharsets.UTF_8);
     var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
     var headerKey = "HeaderKey";
     var headerValue = "HeaderValue".getBytes(StandardCharsets.UTF_8);
-    var otherHeader = new RecordHeader(headerKey, headerValue);
-    var expectedHeaders = new RecordHeaders();
-    expectedHeaders.add(otherHeader);
-    var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
+    var header = new RecordHeader(headerKey, headerValue);
     var headers = new RecordHeaders();
-    headers.add(otherHeader);
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
-    var testRecord = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
-    inputTopic.pipeInput(testRecord);
-    // Expect one record to be in the kvStore after the first record is input
-    // No record propogated downstream
-    // Stored Record headers should not include KScheduler Headers
-    var kvStoreIt = scheduledRecordStore.all();
-    var countEntries = 0;
-    while(kvStoreIt.hasNext()) {
-      countEntries++;
-      kvStoreIt.next();
-    }
-    assertEquals(1, countEntries);
-    var kvRecord = scheduledRecordStore.all().next();
-    assertEquals(metadataScheduledIn1Min.id(), kvRecord.key.id());
-    assertEquals(metadataScheduledIn1Min.scheduled(), kvRecord.key.scheduled());
-    assertEquals(metadataScheduledIn1Min, kvRecord.value.metadata());
-    assertArrayEquals(key, kvRecord.value.key());
-    assertArrayEquals(value, kvRecord.value.value());
-    assertEquals(expectedHeaders, kvRecord.value.headers());
-    // assertTrue(outputTopicA.isEmpty());
+    headers.add(header);
+    var initialRecord = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
+    
+    // Send the record
+    inputTopic.pipeInput(initialRecord);
+    // No record immediately propogated downstream
+    assertTrue(outputTopicA.isEmpty());
+    
     // Advance the clock 30 seconds.
-    // Record should still be in the store and no records should be propogated to output topics
+    // No records should be propogated to output topics
     testDriver.advanceWallClockTime(Duration.ofSeconds(30));
-    kvStoreIt = scheduledRecordStore.all();
-    countEntries = 0;
-    while(kvStoreIt.hasNext()) {
-      countEntries++;
-      kvStoreIt.next();
-    }
-    assertEquals(1, countEntries);
-    //assertTrue(outputTopicA.isEmpty());
+    assertTrue(outputTopicA.isEmpty());
+    
     // Advance the clock another 30 seconds - record is scheduled for this time
-    // Expect the record to be removed from the kvStore and propogated downstream
+    // Expect the record to be propogated downstream
     // Output record should have 2 headers - one for the destination, and the other existing header
     testDriver.advanceWallClockTime(Duration.ofSeconds(30));
-    assertFalse(scheduledRecordStore.all().hasNext());
     assertFalse(outputTopicA.isEmpty());
     var outputRecord = outputTopicA.readRecord();
     assertArrayEquals(key, outputRecord.getKey());
     assertArrayEquals(value, outputRecord.getValue());
     assertEquals(2, outputRecord.headers().toArray().length);
-    assertEquals(otherHeader, outputRecord.headers().lastHeader(headerKey));
+    assertEquals(header, outputRecord.headers().lastHeader(headerKey));
     var destinationHeader = outputRecord.headers().lastHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY);
     var expectedDestinationHeader = new RecordHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, OUTPUT_TOPIC_A.getBytes(StandardCharsets.UTF_8));
     assertEquals(expectedDestinationHeader, destinationHeader);
   }
+
+  @Test
+  public void updatedRecordIsForwardedToUpdatedTopic() {
+    var key = "Hello".getBytes(StandardCharsets.UTF_8);
+    var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
+    var headers = new RecordHeaders();
+    headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
+    var initialRecord = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
+    var metadataScheduledToNewTopic = new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_B);
+    var updateHeaders = new RecordHeaders();
+    updateHeaders.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, METADATA_SERIALIZER.serialize(null, metadataScheduledToNewTopic));
+    var updateRecord = new TestRecord<byte[], byte[]>(key, value, updateHeaders, Instant.EPOCH.plus(Duration.ofSeconds(30)));
+    inputTopic.pipeInput(initialRecord);
+    // No record propogated downstream
+    assertTrue(outputTopicA.isEmpty());
+    // Advance the clock 30 seconds.
+    // Record should still be in the store and no records should be propogated to output topics
+    testDriver.advanceWallClockTime(Duration.ofSeconds(30));
+    // Send the new record
+    inputTopic.pipeInput(updateRecord);
+    assertTrue(outputTopicA.isEmpty());
+    assertTrue(outputTopicB.isEmpty());
+    // Advance the clock another 30 seconds - record is scheduled for this time, but should go to the updated topic
+    // Expect the no record to be propogated
+    testDriver.advanceWallClockTime(Duration.ofSeconds(30));
+    assertTrue(outputTopicA.isEmpty());
+    assertFalse(outputTopicB.isEmpty());
+    var outputRecord = outputTopicB.readRecord();
+    assertArrayEquals(key, outputRecord.getKey());
+    assertArrayEquals(value, outputRecord.getValue());
+    assertEquals(1, outputRecord.headers().toArray().length);
+    var destinationHeader = outputRecord.headers().lastHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY);
+    var expectedDestinationHeader = new RecordHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, OUTPUT_TOPIC_B.getBytes(StandardCharsets.UTF_8));
+    assertEquals(expectedDestinationHeader, destinationHeader);
+  }
+
+
+
+  @Test
+  public void deletedRecordIsNotForwarded() {
+
+    var key = "Hello".getBytes(StandardCharsets.UTF_8);
+    var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
+    var headers = new RecordHeaders();
+    headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
+    var initialRecord = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
+    var metadataScheduledAtMinInstant = new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MIN, Instant.MIN, ID, OUTPUT_TOPIC_A);
+    var deleteHeaders = new RecordHeaders();
+    deleteHeaders.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, METADATA_SERIALIZER.serialize(null, metadataScheduledAtMinInstant));
+    var deleteRecord = new TestRecord<byte[], byte[]>(key, value, deleteHeaders, Instant.EPOCH.plus(Duration.ofSeconds(30)));
+    inputTopic.pipeInput(initialRecord);
+    // No record propogated downstream
+    assertTrue(outputTopicA.isEmpty());
+    // Advance the clock 30 seconds.
+    // Record should still be in the store and no records should be propogated to output topics
+    testDriver.advanceWallClockTime(Duration.ofSeconds(30));
+    // Send the new record
+    inputTopic.pipeInput(deleteRecord);
+    assertTrue(outputTopicA.isEmpty());
+    // Advance the clock another 30 seconds - original record is scheduled for this time
+    // Expect the no record to be propogated
+    testDriver.advanceWallClockTime(Duration.ofSeconds(30));
+    assertTrue(outputTopicA.isEmpty());
+    // And the same after one minute
+    testDriver.advanceWallClockTime(Duration.ofMinutes(1));
+    assertTrue(outputTopicA.isEmpty());
+  }
+
 
 }

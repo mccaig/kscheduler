@@ -21,7 +21,6 @@ import com.rhysmccaig.kscheduler.streams.KSchedulerProductionExceptionHandler;
 import com.rhysmccaig.kscheduler.streams.ScheduledDestinationTopicNameExtractor;
 import com.rhysmccaig.kscheduler.streams.ScheduledRecordIdPartitioner;
 import com.rhysmccaig.kscheduler.streams.ScheduledToSourceTransformer;
-import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
@@ -41,7 +40,6 @@ import org.apache.kafka.streams.state.StoreBuilder;
 public class KScheduler {
   static final Logger logger = LogManager.getLogger(KScheduler.class); 
 
-  private static Serde<ScheduledId> SCHEDULED_ID_SERDE = new ScheduledIdSerde();
   private static Serde<ScheduledRecordMetadata> METADATA_SERDE = new ScheduledRecordMetadataSerde();
   private static Serde<ScheduledRecord> RECORD_SERDE = new ScheduledRecordSerde();
 
