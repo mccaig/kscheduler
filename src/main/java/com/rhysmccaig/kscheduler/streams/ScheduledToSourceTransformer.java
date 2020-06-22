@@ -29,14 +29,19 @@ public class ScheduledToSourceTransformer implements Transformer<ScheduledRecord
       // if the headers are null then we are probably directly attached to a stateful processor
       // Unfortunately streams doesnt have a way to set
       logger.warn("Dropping record: Unable to set destination header. This should only happen if the transformer has been attached directly to a stateful processor. Instead route the stream through a kafka topic first.");
-      return null;
+    } else {
+      value.headers().forEach(header -> {
+        context.headers().add(header);
+      });
+      context.headers().add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, key.destination().getBytes(StandardCharsets.UTF_8));
+      final var newKey = new Bytes(value.key());
+      final var newValue = new Bytes(value.value());
+      context.forward(newKey, newValue);
     }
-    context.headers().add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, key.destination().getBytes(StandardCharsets.UTF_8));
-    final var newKey = new Bytes(value.key());
-    final var newValue = new Bytes(value.value());
-    context.forward(newKey, newValue);
     return null;
   }
-  public void close() {}
+  public void close() {
+    // noop
+  }
 
 }
