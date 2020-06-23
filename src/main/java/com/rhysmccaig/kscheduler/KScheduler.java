@@ -61,7 +61,8 @@ public class KScheduler {
         topicsConfig.getString("outgoing"), 
         SchedulerTransformer.getScheduledRecordStoreBuilder(topicsConfig.getString("scheduled-records")),
         SchedulerTransformer.getScheduledIdStoreBuilder(topicsConfig.getString("scheduled-ids")),
-        schedulerConfig.getDuration("punctuate.interval"));
+        schedulerConfig.getDuration("punctuate.interval"),
+        schedulerConfig.getDuration("maximum.delay"));
 
     logger.debug("streams topology: {}", topology.describe());
 
@@ -93,7 +94,8 @@ public class KScheduler {
       String outgoingTopic,
       StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> scheduledRecordStoreBuilder,
       StoreBuilder<KeyValueStore<UUID, ScheduledId>> scheduledIdStoreBuilder,
-      Duration punctuateInterval) {
+      Duration punctuateInterval,
+      Duration maximumDelay) {
     var builder = new StreamsBuilder();
     builder.addStateStore(scheduledRecordStoreBuilder)
         .addStateStore(scheduledIdStoreBuilder)
@@ -101,7 +103,7 @@ public class KScheduler {
         .transform(SourceToScheduledTransformer::new, Named.as("SOURCE_TO_SCHEDULED"))
         .through(scheduledTopic, Produced.with(METADATA_SERDE, RECORD_SERDE, new ScheduledRecordIdPartitioner()))
         .transform(
-            () -> new SchedulerTransformer(scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name(), punctuateInterval), 
+            () -> new SchedulerTransformer(scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name(), punctuateInterval, maximumDelay), 
             Named.as("SCHEDULER"),
             scheduledRecordStoreBuilder.name(),
             scheduledIdStoreBuilder.name())

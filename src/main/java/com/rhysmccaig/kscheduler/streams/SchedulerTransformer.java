@@ -28,6 +28,7 @@ import io.opentelemetry.metrics.LongCounter.BoundLongCounter;
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
+import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
 import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
 
@@ -36,6 +37,7 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
 
   // How often we scan the records database for records that are ready to be forwarded.
   public static final Duration DEFAULT_PUNCTUATE_INTERVAL = Duration.ofSeconds(1);
+  public static final Duration DEFAULT_MAXIMUM_DELAY = Duration.ofDays(7);
   public static final String DEFAULT_SCHEDULED_RECORDS_STATE_STORE_NAME = "kscheduler-scheduled-records";
   public static final String DEFAULT_SCHEDULED_IDS_STATE_STORE_NAME = "kscheduler-scheduled-ids";
   public static final String PROCESSOR_NAME = "kscheduler-processor";
@@ -53,16 +55,18 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   private KeyValueStore<UUID, ScheduledId> scheduledIdStore;
 
   private Duration punctuateSchedule;  
+  private Duration maximumDelay; 
   private LongCounter recordCounter;
   private BoundLongCounter transformValidCounter;
   private BoundLongCounter transformInvalidCounter;
   private BoundLongCounter scheduledRecordCounter;
   private BoundLongCounter forwardedRecordCounter;
 
-  public SchedulerTransformer(String scheduledRecordStoreName, String scheduledIdStoreName, Duration punctuateSchedule) {
-    this.scheduledRecordStoreName = Objects.requireNonNull(scheduledRecordStoreName);
-    this.scheduledIdStoreName = Objects.requireNonNull(scheduledIdStoreName);
-    this.punctuateSchedule = Objects.requireNonNull(punctuateSchedule);
+  public SchedulerTransformer(String scheduledRecordStoreName, String scheduledIdStoreName, Duration punctuateSchedule, Duration maximumDelay) {
+    this.scheduledRecordStoreName = Objects.requireNonNullElse(scheduledRecordStoreName, DEFAULT_SCHEDULED_RECORDS_STATE_STORE_NAME);
+    this.scheduledIdStoreName = Objects.requireNonNullElse(scheduledIdStoreName, DEFAULT_SCHEDULED_IDS_STATE_STORE_NAME);
+    this.punctuateSchedule = Objects.requireNonNullElse(punctuateSchedule, DEFAULT_PUNCTUATE_INTERVAL);
+    this.maximumDelay = Objects.requireNonNullElse(maximumDelay, DEFAULT_MAXIMUM_DELAY);
     recordCounter = meter.longCounterBuilder("processed_records")
         .setDescription("Processed Records")
         .setUnit("Record")
@@ -74,12 +78,8 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
     forwardedRecordCounter = recordCounter.bind("punctuate()", "Forward");
   }
 
-  public SchedulerTransformer(String scheduledRecordStoreName, String scheduledIdStoreName) {
-    this(scheduledRecordStoreName, scheduledIdStoreName, DEFAULT_PUNCTUATE_INTERVAL);
-  }
-
   public SchedulerTransformer() {
-    this(DEFAULT_SCHEDULED_RECORDS_STATE_STORE_NAME, DEFAULT_SCHEDULED_IDS_STATE_STORE_NAME, DEFAULT_PUNCTUATE_INTERVAL);
+    this(null, null, null, null);
   }
 
   @Override
@@ -108,11 +108,17 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
         scheduledRecordStore.delete(staleRecord);
       }
       // If a records expiry time is after the scheduled time, then add it into our state stores for later processing
+      // Ensure that the scheduled time isnt too far in the future
       if (metadata.expires().isAfter(metadata.scheduled())) {
-        var sid = new ScheduledId(metadata.scheduled(), metadata.id());
-        scheduledRecordStore.put(sid, record);
-        scheduledIdStore.put(id, sid);
-        scheduledRecordCounter.add(1);
+        var recordTimestamp = Instant.ofEpochMilli(context.timestamp());
+        if (metadata.expires().isBefore(recordTimestamp.plus(maximumDelay))) {
+          var sid = new ScheduledId(metadata.scheduled(), metadata.id());
+          scheduledRecordStore.put(sid, record);
+          scheduledIdStore.put(id, sid);
+          scheduledRecordCounter.add(1);
+        } else {
+          logger.info("Dropped record scheduled after the maximum delay. {}", metadata);
+        }
       }
     }
     // We never forward records at this time, only during punctuatation.

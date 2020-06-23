@@ -40,6 +40,7 @@ public class KSchedulerTest {
   private static Serializer<ScheduledRecordMetadata> METADATA_SERIALIZER = METADATA_SERDE.serializer();
 
   private static Duration PUNCTUATE_DURATION = Duration.ofSeconds(1);
+  private static Duration MAX_DELAY = Duration.ofHours(1);
 
   private static String INPUT_TOPIC = "inputtopic";
   private static String SCHEDULED_TOPIC = "scheduledtopic";
@@ -63,7 +64,7 @@ public class KSchedulerTest {
   public void setup() {
     var scheduledRecordStoreBuilder = SchedulerTransformer.getScheduledRecordStoreBuilder();
     var scheduledIdStoreBuilder = SchedulerTransformer.getScheduledIdStoreBuilder();
-    var topology = KScheduler.getTopology(INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, scheduledRecordStoreBuilder, scheduledIdStoreBuilder, PUNCTUATE_DURATION);
+    var topology = KScheduler.getTopology(INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, scheduledRecordStoreBuilder, scheduledIdStoreBuilder, PUNCTUATE_DURATION, MAX_DELAY);
     // As our topology routes output records dynamically, the topics we are testing are not initialized in TopologyTestDriver
     // Unless we create a dummy sub-topology and add them to it
     topology.addSource("DUMMY_SOURCE", "dummy");
@@ -139,6 +140,30 @@ public class KSchedulerTest {
   }
 
   @Test
+  public void recordWithExcessiveScheduledTimeIsDropped() {
+    var key = "Hello".getBytes(StandardCharsets.UTF_8);
+    var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var metadataScheduledIn2Hours = new ScheduledRecordMetadata(Instant.EPOCH.plus(Duration.ofHours(2)), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
+    var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn2Hours);
+    var headers = new RecordHeaders();
+    headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
+    var record = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
+    // Send the record
+    inputTopic.pipeInput(record);
+    // No record immediately propogated downstream
+    assertTrue(outputTopicA.isEmpty());
+    // Advance the clock 1 hour.
+    // No records should be propogated to output topics
+    testDriver.advanceWallClockTime(Duration.ofHours(1));
+    assertTrue(outputTopicA.isEmpty());
+    // Advance the clock 2 hours.
+    // No records should be propogated to output topics
+    testDriver.advanceWallClockTime(Duration.ofHours(2));
+    assertTrue(outputTopicA.isEmpty());
+
+  }
+
+  @Test
   public void updatedRecordIsForwardedToUpdatedTopic() {
     var key = "Hello".getBytes(StandardCharsets.UTF_8);
     var value = "World!".getBytes(StandardCharsets.UTF_8);
@@ -178,7 +203,6 @@ public class KSchedulerTest {
 
   @Test
   public void deletedRecordIsNotForwarded() {
-
     var key = "Hello".getBytes(StandardCharsets.UTF_8);
     var value = "World!".getBytes(StandardCharsets.UTF_8);
     var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
