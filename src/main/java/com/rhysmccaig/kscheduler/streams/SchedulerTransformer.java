@@ -111,7 +111,7 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
       // Ensure that the scheduled time isnt too far in the future
       if (metadata.expires().isAfter(metadata.scheduled())) {
         var recordTimestamp = Instant.ofEpochMilli(context.timestamp());
-        if (metadata.expires().isBefore(recordTimestamp.plus(maximumDelay))) {
+        if (metadata.scheduled().isBefore(recordTimestamp.plus(maximumDelay))) {
           var sid = new ScheduledId(metadata.scheduled(), metadata.id());
           scheduledRecordStore.put(sid, record);
           scheduledIdStore.put(id, sid);
