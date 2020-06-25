@@ -47,11 +47,12 @@ public class KScheduler {
     final Config config = ConfigFactory.load();
     final Config schedulerConfig = config.getConfig("scheduler");
     final Config topicsConfig = config.getConfig("topics");
-    final Config kafkaConfig = config.getConfig("kafka");
+    final Config streamsConfig = config.getConfig("kafka.streams");
 
     final Duration streamsShutdownTimeout = schedulerConfig.getDuration("streams.shutdown.timeout");
 
-    Properties streamsProps = ConfigUtils.toProperties(kafkaConfig.withFallback(kafkaConfig.getConfig("streams")));
+    Properties streamsProps = ConfigUtils.toProperties(streamsConfig);
+    // Force these settings
     streamsProps.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, LogAndContinueExceptionHandler.class);
     streamsProps.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, KSchedulerProductionExceptionHandler.class);
 
