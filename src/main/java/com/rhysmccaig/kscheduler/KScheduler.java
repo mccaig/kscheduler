@@ -49,7 +49,7 @@ public class KScheduler {
     final Config topicsConfig = config.getConfig("topics");
     final Config streamsConfig = config.getConfig("kafka.streams");
 
-    final Duration streamsShutdownTimeout = schedulerConfig.getDuration("streams.shutdown.timeout");
+    final Duration streamsShutdownTimeout = streamsConfig.getDuration("shutdown.timeout");
 
     Properties streamsProps = ConfigUtils.toProperties(streamsConfig);
     // Force these settings
