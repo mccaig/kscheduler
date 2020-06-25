@@ -1,19 +1,15 @@
 package com.rhysmccaig.kscheduler.serialization;
 
 import static com.rhysmccaig.kscheduler.util.SerializationUtils.putOrderedBytes;
-
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
-
-import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-
 import org.apache.kafka.common.errors.SerializationException;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,13 +30,16 @@ public class ScheduledRecordMetadataDeserializerTest {
   private byte[] idBytes = new byte[16];
   private byte[] destinationBytes;
 
+  /**
+   * Test setup.
+   */
   @BeforeEach
   public void beforeEach() {
     putOrderedBytes(buffer.clear(), SCHEDULED).flip().get(scheduledBytes);
     putOrderedBytes(buffer.clear(), EXPIRES).flip().get(expiresBytes);
     putOrderedBytes(buffer.clear(), CREATED).flip().get(createdBytes);
     putOrderedBytes(buffer.clear(), ID).flip().get(idBytes);
-    destinationBytes = DESTINATION.getBytes(StandardCharsets.UTF_8);
+    destinationBytes = DESTINATION.getBytes(UTF_8);
   }
 
   @Test

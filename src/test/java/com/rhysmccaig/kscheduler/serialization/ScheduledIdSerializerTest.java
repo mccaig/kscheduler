@@ -2,14 +2,12 @@ package com.rhysmccaig.kscheduler.serialization;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+import com.rhysmccaig.kscheduler.model.ScheduledId;
+import com.rhysmccaig.kscheduler.util.SerializationUtils;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
-
-import com.rhysmccaig.kscheduler.model.ScheduledId;
-import com.rhysmccaig.kscheduler.util.SerializationUtils;
-
 import org.junit.jupiter.api.Test;
 
 public class ScheduledIdSerializerTest {

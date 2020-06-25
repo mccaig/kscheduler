@@ -1,17 +1,15 @@
 package com.rhysmccaig.kscheduler.serialization;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.UUID;
 
 import com.google.protobuf.ByteString;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
-
+import java.time.Instant;
+import java.util.UUID;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
@@ -26,20 +24,24 @@ public class ScheduledRecordDeserializerTest {
   private static Instant CREATED = Instant.MIN;
   private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
   private static String DESTINATION = "topic";
-  private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
+  private static ScheduledRecordMetadata METADATA = 
+      new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
   private static ScheduledRecordMetadataSerializer METADATAA_SERIALIZER = new ScheduledRecordMetadataSerializer();
   private static byte[] METADATA_BYTES = METADATAA_SERIALIZER.serialize(METADATA);
 
   private static String HEADER_KEY = "hello";
-  private static byte[] HEADER_VALUE = "world".getBytes(StandardCharsets.UTF_8);
-  private static byte[] KEY = "1234".getBytes(StandardCharsets.UTF_8);
-  private static byte[] VALUE = "abcd".getBytes(StandardCharsets.UTF_8);
+  private static byte[] HEADER_VALUE = "world".getBytes(UTF_8);
+  private static byte[] KEY = "1234".getBytes(UTF_8);
+  private static byte[] VALUE = "abcd".getBytes(UTF_8);
   private static Headers HEADERS = new RecordHeaders().add(new RecordHeader(HEADER_KEY, HEADER_VALUE));
 
   private static ScheduledRecordDeserializer DESERIALIZER = new ScheduledRecordDeserializer();
 
   private Protos.ScheduledRecord.Builder srpBuilder;
 
+  /**
+   * Test setup.
+   */
   @BeforeEach
   public void beforeEach() {
     srpBuilder = Protos.ScheduledRecord.newBuilder()

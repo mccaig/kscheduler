@@ -1,18 +1,16 @@
 package com.rhysmccaig.kscheduler.streams;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
-
+import java.time.Instant;
+import java.util.UUID;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.utils.Bytes;
@@ -29,12 +27,16 @@ public class SourceToScheduledTransformerTest {
   private static Instant CREATED = Instant.MIN;
   private static UUID ID = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
   private static String DESTINATION = "topic";
-  private static ScheduledRecordMetadata METADATA = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
+  private static ScheduledRecordMetadata METADATA = 
+      new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);
   private static ScheduledRecordMetadataSerializer METADATA_SERIALIZER = new ScheduledRecordMetadataSerializer();
 
   private SourceToScheduledTransformer transformer;
   private MockProcessorContext context;
 
+  /**
+   * Test setup.
+   */
   @BeforeEach
   public void setup() {
     context = new MockProcessorContext();
@@ -49,8 +51,8 @@ public class SourceToScheduledTransformerTest {
 
   @Test
   public void transforms_message_with_metadata() {
-    var key = "Hello".getBytes(StandardCharsets.UTF_8);
-    var value = "world!".getBytes(StandardCharsets.UTF_8);
+    var key = "Hello".getBytes(UTF_8);
+    var value = "world!".getBytes(UTF_8);
     var bytes = METADATA_SERIALIZER.serialize(METADATA);
     var header = new RecordHeader(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, bytes);
     var headers = new RecordHeaders().add(header);
@@ -68,9 +70,9 @@ public class SourceToScheduledTransformerTest {
 
   @Test
   public void drops_message_without_metadata() {
-    var key = "Hello".getBytes(StandardCharsets.UTF_8);
-    var value = "world!".getBytes(StandardCharsets.UTF_8);
-    var header = new RecordHeader("foo", "bar".getBytes(StandardCharsets.UTF_8));
+    var key = "Hello".getBytes(UTF_8);
+    var value = "world!".getBytes(UTF_8);
+    var header = new RecordHeader("foo", "bar".getBytes(UTF_8));
     var headers = new RecordHeaders().add(header);
     context.setHeaders(headers);
     context.setTopic("baz");

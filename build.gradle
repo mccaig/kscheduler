@@ -1,6 +1,8 @@
 plugins {
     id 'java'
     id 'application'
+    id 'checkstyle'
+    id 'jacoco'
     id "com.google.protobuf" version "0.8.12"
 }
 
@@ -8,7 +10,6 @@ repositories {
      mavenLocal()
      mavenCentral()
 }
-
 
 dependencies {
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '2.5.0'
@@ -33,6 +34,11 @@ application {
     mainClassName = 'com.rhysmccaig.kscheduler.KScheduler'
 }
 
+checkstyle {
+	toolVersion '8.33'
+    configFile file("${project.rootDir}/config/checkstyle/google_checks.xml")
+}
+
 compileJava {
     options.encoding = 'UTF-8'
 }
@@ -46,13 +52,18 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
+jacocoTestReport {
+    dependsOn test 
+}
+
 test {
     useJUnitPlatform()
     enableAssertions = true
+    finalizedBy jacocoTestReport
 }
 
 protobuf {
-    generatedFilesBaseDir = "$projectDir/src/generated"
+    generatedFilesBaseDir = "$projectDir/build/generated"
     protoc {
         artifact = 'com.google.protobuf:protoc:3.12.1'
     }
@@ -61,7 +72,7 @@ protobuf {
 sourceSets {
     main {
         java {
-            srcDirs = ['src/main/java', 'src/generated/main/java']
+            srcDirs = ['src/main/java', 'build/generated/main/java']
         }
     }
 }

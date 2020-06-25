@@ -1,10 +1,9 @@
 package com.rhysmccaig.kscheduler.model;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +17,13 @@ public class ScheduledRecord {
   private byte[] value;
   private Headers headers;
 
+  /**
+   * Container object for a record that is scheduled.
+   * @param metadata details about the scheduled record including scheduled time and destination
+   * @param key scheduled record key
+   * @param value scheduled record value
+   * @param headers scheduled record headers
+   */
   public ScheduledRecord(ScheduledRecordMetadata metadata, byte[] key, byte[] value, Headers headers) {
     if (metadata == null) {
       throw new NullPointerException("metadata must not be null");
@@ -25,7 +31,7 @@ public class ScheduledRecord {
     this.metadata = metadata;
     this.key = key;
     this.value = value;
-    this.headers = Objects.nonNull(headers) ? headers : new RecordHeaders();
+    this.headers = Objects.requireNonNullElse(headers, new RecordHeaders());
   }
 
   public byte[] key() {
@@ -46,14 +52,15 @@ public class ScheduledRecord {
 
   @Override
   public int hashCode() {
-      return Objects.hash(metadata, key, value, headers);
+    return Objects.hash(metadata, key, value, headers);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o == this) return true;
-    if (!(o instanceof ScheduledRecord)) {
-        return false;
+    if (o == this) {
+      return true;
+    } else if (!(o instanceof ScheduledRecord)) {
+      return false;
     }
     var co = (ScheduledRecord) o;
     return Objects.equals(metadata, co.metadata)
@@ -68,9 +75,9 @@ public class ScheduledRecord {
       .append("{metadata=")
       .append(metadata)
       .append(", key=")
-      .append(Objects.nonNull(key) ? new String(key, StandardCharsets.UTF_8) : null)
+      .append((key != null) ? new String(key, UTF_8) : null)
       .append(", value=")
-      .append(Objects.nonNull(value) ? new String(value, StandardCharsets.UTF_8) : null)
+      .append((value != null) ? new String(value, UTF_8) : null)
       .append(", headers=")
       .append(headers)
       .append("}")

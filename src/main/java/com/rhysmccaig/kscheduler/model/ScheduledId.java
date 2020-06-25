@@ -25,14 +25,15 @@ public class ScheduledId {
 
   @Override
   public int hashCode() {
-      return Objects.hash(scheduled, id);
+    return Objects.hash(scheduled, id);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o == this) return true;
-    if (!(o instanceof ScheduledId)) {
-        return false;
+    if (o == this) {
+      return true;
+    } else if (!(o instanceof ScheduledId)) {
+      return false;
     }
     var co = (ScheduledId) o;
     return Objects.equals(scheduled, co.scheduled)

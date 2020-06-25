@@ -3,7 +3,6 @@ package com.rhysmccaig.kscheduler.serialization;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
-
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -11,7 +10,6 @@ import org.apache.kafka.common.serialization.Deserializer;
 public class ScheduledRecordDeserializer implements Deserializer<ScheduledRecord> {
     
   private static ScheduledRecordMetadataDeserializer METADATA_DESERIALIZER = new ScheduledRecordMetadataDeserializer();
-
 
   public ScheduledRecord deserialize(byte[] bytes) {
     return deserialize(null, bytes);

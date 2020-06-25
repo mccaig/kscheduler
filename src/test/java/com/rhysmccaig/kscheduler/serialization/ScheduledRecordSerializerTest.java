@@ -1,16 +1,14 @@
 package com.rhysmccaig.kscheduler.serialization;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.UUID;
 
 import com.google.protobuf.ByteString;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
-
+import java.time.Instant;
+import java.util.UUID;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
@@ -27,17 +25,19 @@ public class ScheduledRecordSerializerTest {
   private static String DESTINATION = "topic";
 
   private static String HEADER_KEY = "hello";
-  private static byte[] HEADER_VALUE = "world".getBytes(StandardCharsets.UTF_8);
-  private static byte[] KEY = "1234".getBytes(StandardCharsets.UTF_8);
-  private static byte[] VALUE = "abcd".getBytes(StandardCharsets.UTF_8);
-  private static Headers HEADERS = new RecordHeaders().add(new RecordHeader("hello", "world".getBytes(StandardCharsets.UTF_8)));
+  private static byte[] HEADER_VALUE = "world".getBytes(UTF_8);
+  private static byte[] KEY = "1234".getBytes(UTF_8);
+  private static byte[] VALUE = "abcd".getBytes(UTF_8);
+  private static Headers HEADERS = new RecordHeaders().add(new RecordHeader("hello", "world".getBytes(UTF_8)));
   private static ScheduledRecordSerializer SERIALIZER = new ScheduledRecordSerializer();
   private static ScheduledRecordMetadataSerializer METADATA_SERIALIZER = new ScheduledRecordMetadataSerializer();
 
   private Protos.ScheduledRecord.Builder srpBuilder;
   private ScheduledRecordMetadata srm;
 
-
+  /**
+   * TEst setup.
+   */
   @BeforeEach
   public void beforeEach() {
     srm = new ScheduledRecordMetadata(SCHEDULED, EXPIRES, CREATED, ID, DESTINATION);

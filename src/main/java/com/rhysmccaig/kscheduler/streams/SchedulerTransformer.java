@@ -1,11 +1,19 @@
 package com.rhysmccaig.kscheduler.streams;
 
+import com.rhysmccaig.kscheduler.model.ScheduledId;
+import com.rhysmccaig.kscheduler.model.ScheduledRecord;
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
+import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
+import io.opentelemetry.OpenTelemetry;
+import io.opentelemetry.metrics.LongCounter;
+import io.opentelemetry.metrics.LongCounter.BoundLongCounter;
+import io.opentelemetry.metrics.Meter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.UUID;
-
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -20,19 +28,12 @@ import org.apache.kafka.streams.state.Stores;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.opentelemetry.OpenTelemetry;
-import io.opentelemetry.metrics.LongCounter;
-import io.opentelemetry.metrics.Meter;
-import io.opentelemetry.metrics.LongCounter.BoundLongCounter;
 
-import com.rhysmccaig.kscheduler.model.ScheduledId;
-import com.rhysmccaig.kscheduler.model.ScheduledRecord;
-import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.model.TopicPartitionOffset;
-import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
-import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
 
-public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata, ScheduledRecord, KeyValue<ScheduledRecordMetadata, ScheduledRecord>> {
+
+
+public class SchedulerTransformer implements 
+    Transformer<ScheduledRecordMetadata, ScheduledRecord, KeyValue<ScheduledRecordMetadata, ScheduledRecord>> {
   static final Logger logger = LogManager.getLogger(SchedulerTransformer.class); 
 
   // How often we scan the records database for records that are ready to be forwarded.
@@ -62,9 +63,19 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   private BoundLongCounter scheduledRecordCounter;
   private BoundLongCounter forwardedRecordCounter;
 
-  public SchedulerTransformer(String scheduledRecordStoreName, String scheduledIdStoreName, Duration punctuateSchedule, Duration maximumDelay) {
-    this.scheduledRecordStoreName = Objects.requireNonNullElse(scheduledRecordStoreName, DEFAULT_SCHEDULED_RECORDS_STATE_STORE_NAME);
-    this.scheduledIdStoreName = Objects.requireNonNullElse(scheduledIdStoreName, DEFAULT_SCHEDULED_IDS_STATE_STORE_NAME);
+  /**
+   * The core scheduling logic of the application.
+   * @param scheduledRecordStoreName name of state store for scheduled records
+   * @param scheduledIdStoreName name of state store for scheduled records id lookup
+   * @param punctuateSchedule how often the scheduler checks for messages to be ready to send
+   * @param maximumDelay the maximum amount of time a record may be scheduled in the future
+   */
+  public SchedulerTransformer(
+      String scheduledRecordStoreName, String scheduledIdStoreName, Duration punctuateSchedule, Duration maximumDelay) {
+    this.scheduledRecordStoreName = 
+        Objects.requireNonNullElse(scheduledRecordStoreName, DEFAULT_SCHEDULED_RECORDS_STATE_STORE_NAME);
+    this.scheduledIdStoreName = 
+        Objects.requireNonNullElse(scheduledIdStoreName, DEFAULT_SCHEDULED_IDS_STATE_STORE_NAME);
     this.punctuateSchedule = Objects.requireNonNullElse(punctuateSchedule, DEFAULT_PUNCTUATE_INTERVAL);
     this.maximumDelay = Objects.requireNonNullElse(maximumDelay, DEFAULT_MAXIMUM_DELAY);
     recordCounter = meter.longCounterBuilder("processed_records")
@@ -86,16 +97,18 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
   @SuppressWarnings("unchecked")
   public void init(ProcessorContext ctx) {
     context = ctx;
-    scheduledRecordStore = (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(scheduledRecordStoreName);
+    scheduledRecordStore = 
+        (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(scheduledRecordStoreName);
     scheduledIdStore = (KeyValueStore<UUID, ScheduledId>) context.getStateStore(scheduledIdStoreName);
     // schedule a punctuate() based on wall-clock time
     this.context.schedule(punctuateSchedule, PunctuationType.WALL_CLOCK_TIME, new SchedulerPunctuator());
   }
 
   /**
-   * Add the record into the state store for processing
+   * Add the record into the state store for processing.
    */
-  public KeyValue<ScheduledRecordMetadata, ScheduledRecord> transform(ScheduledRecordMetadata metadata, ScheduledRecord record) {
+  public KeyValue<ScheduledRecordMetadata, ScheduledRecord> 
+      transform(ScheduledRecordMetadata metadata, ScheduledRecord record) {
     var id = metadata.id();
     // If a record doesnt have a uuid, its dead to us, so make sure it is set
     if (id == null) {
@@ -125,6 +138,9 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
     return null;
   }
 
+  /**
+   * Release the resources related with this instance.
+   */
   public void close() {
     context = null;
     scheduledRecordStore = null;
@@ -138,7 +154,13 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
     return getScheduledRecordStoreBuilder(DEFAULT_SCHEDULED_RECORDS_STATE_STORE_NAME);
   }
 
-  public static StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> getScheduledRecordStoreBuilder(String storeName) {
+  /**
+   * Returns a key value storebuilder for scheduled records.
+   * @param storeName the name of the store
+   * @return
+   */
+  public static StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> 
+      getScheduledRecordStoreBuilder(String storeName) {
     return Stores.keyValueStoreBuilder(
         Stores.persistentKeyValueStore(storeName),
         SCHEDULED_ID_SERDE,
@@ -150,6 +172,11 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
     return getScheduledIdStoreBuilder(DEFAULT_SCHEDULED_IDS_STATE_STORE_NAME);
   }
 
+  /**
+   * Returns a key value storebuilder for scheduled record id lookup.
+   * @param storeName the name of the store
+   * @return
+   */
   public static StoreBuilder<KeyValueStore<UUID, ScheduledId>> getScheduledIdStoreBuilder(String storeName) {
     return Stores.keyValueStoreBuilder(
         Stores.persistentKeyValueStore(storeName),
@@ -172,12 +199,12 @@ public class SchedulerTransformer implements Transformer<ScheduledRecordMetadata
       var count = 0;
       
       while (iter.hasNext()) {
-          KeyValue<ScheduledId, ScheduledRecord> entry = iter.next();
-          var value = entry.value;
-          var key = value.metadata();
-          context.forward(key, value);
-          scheduledRecordStore.delete(entry.key);
-          count++;
+        KeyValue<ScheduledId, ScheduledRecord> entry = iter.next();
+        var value = entry.value;
+        var key = value.metadata();
+        context.forward(key, value);
+        scheduledRecordStore.delete(entry.key);
+        count++;
       }
       forwardedRecordCounter.add(count);
       iter.close();

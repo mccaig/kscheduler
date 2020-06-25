@@ -1,7 +1,6 @@
 package com.rhysmccaig.kscheduler.serialization;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-
 import org.apache.kafka.common.serialization.Serde;
 
 public class ScheduledRecordMetadataSerde implements Serde<ScheduledRecordMetadata> {

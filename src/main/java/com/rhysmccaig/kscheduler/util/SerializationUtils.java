@@ -8,9 +8,13 @@ public class SerializationUtils {
 
   private SerializationUtils() {}
 
-  // returns a byte array representing a long value
-  // the most significant bit is flipped so that the resulting
-  // byte array will sort lexicographically
+  /**
+   * Returns a byte array representing a long value.
+   * the most significant bit is flipped so that the resulting
+   * byte array will sort lexicographically
+   * @param val the long value to convert to bytes
+   * @return
+   */
   public static byte[] toOrderedBytes(long val) {
     return new byte[] {
       (byte) ((val >> 56) ^ 0x80),
@@ -24,9 +28,13 @@ public class SerializationUtils {
     };
   }
 
-  // returns a byte array representing a int value
-  // the most significant bit is flipped so that the resulting
-  // byte array can be compared lexicographically
+  /**
+   * Returns a byte array representing an int value.
+   * the most significant bit is flipped so that the resulting
+   * byte array will sort lexicographically
+   * @param val the long value to convert to bytes
+   * @return
+   */
   public static byte[] toOrderedBytes(int val) {
     return new byte[] {
       (byte) ((val >> 24) ^ 0x80),
@@ -36,8 +44,11 @@ public class SerializationUtils {
     };
   }
 
-  // returns a long from a byte array that has been constructed
-  // so that it can be compared lexicographically
+  /**
+   * Converts byte array that has been constructed to order lexicographically into a long.
+   * @param bytes the bytes to convert into a long
+   * @return
+   */
   public static long longFromOrderedBytes(byte[] bytes) {
     long val = (bytes[0] ^ 0x80) & 0xff;
     for (int i = 1; i < 8; i++) {
@@ -46,8 +57,11 @@ public class SerializationUtils {
     return val;
   }
 
-  // returns a int from a byte array that has been constructed
-  // so that it can be compared lexicographically
+  /**
+   * Converts byte array that has been constructed to order lexicographically into an int.
+   * @param bytes the bytes to convert into a int
+   * @return
+   */
   public static int intFromOrderedBytes(byte[] bytes) {
     int val = (bytes[0] ^ 0x80) & 0xff;
     for (int i = 1; i < 4; i++) {
@@ -78,8 +92,13 @@ public class SerializationUtils {
                  .putLong(uuid.getLeastSignificantBits());
   }
 
-  // Extracts an instant from the bytebuffer that has been encoded to be ordered lexicographically 
-  // The bytebuffer's new position will be incremented by 12 (Long.BYTES + Integer.BYTES)
+
+  /**
+   * Extracts an instant from the bytebuffer that has been encoded to be ordered lexicographically .
+   * The bytebuffer's new position will be incremented by 12 (Long.BYTES + Integer.BYTES)
+   * @param buffer the bytebuffer to extract the Instant from
+   * @return
+   */
   public static Instant getInstant(ByteBuffer buffer) {
     byte[] secondsBytes = new byte[Long.BYTES];
     byte[] nanosBytes = new byte[Integer.BYTES];
@@ -92,7 +111,13 @@ public class SerializationUtils {
     return Instant.ofEpochSecond(seconds, nanos);
   }
 
-  public static UUID getUUID(ByteBuffer buffer) {
+  /**
+   * Extracts a UUID from the bytebuffer that has been encoded to be ordered lexicographically .
+   * The bytebuffer's new position will be incremented by 16 (Long.BYTES + Long.BYTES)
+   * @param buffer the bytebuffer to extract the Instant from
+   * @return
+   */
+  public static UUID getUuid(ByteBuffer buffer) {
     var mostSigBits = buffer.getLong();
     var leastSigBits = buffer.getLong();
     return new UUID(mostSigBits, leastSigBits);

@@ -1,12 +1,9 @@
 package com.rhysmccaig.kscheduler.serialization;
 
-import java.util.Objects;
-
 import com.google.protobuf.ByteString;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.protos.Protos;
 import com.rhysmccaig.kscheduler.model.protos.Protos.ScheduledRecordHeader;
-
 import org.apache.kafka.common.serialization.Serializer;
 
 public class ScheduledRecordSerializer implements Serializer<ScheduledRecord> {
@@ -28,10 +25,12 @@ public class ScheduledRecordSerializer implements Serializer<ScheduledRecord> {
   private static Protos.ScheduledRecord toProto(ScheduledRecord record) {
     var builder = Protos.ScheduledRecord.newBuilder()
         .setMetadata(ByteString.copyFrom(METADATA_SERIALIZER.serialize(null, record.metadata())));
-    if (Objects.nonNull(record.key()))
+    if (record.key() != null) {
       builder.setKey(ByteString.copyFrom(record.key()));
-    if (Objects.nonNull(record.value()))
+    }
+    if (record.value() != null) {
       builder.setValue(ByteString.copyFrom(record.value()));
+    }
     var it = record.headers().iterator();
     while (it.hasNext()) {
       var header = it.next();

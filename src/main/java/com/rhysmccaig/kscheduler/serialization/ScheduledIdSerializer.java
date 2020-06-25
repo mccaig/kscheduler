@@ -2,10 +2,8 @@ package com.rhysmccaig.kscheduler.serialization;
 
 import static com.rhysmccaig.kscheduler.util.SerializationUtils.putOrderedBytes;
 
-import java.nio.ByteBuffer;
-
 import com.rhysmccaig.kscheduler.model.ScheduledId;
-
+import java.nio.ByteBuffer;
 import org.apache.kafka.common.serialization.Serializer;
 
 public class ScheduledIdSerializer implements Serializer<ScheduledId> {
@@ -16,12 +14,16 @@ public class ScheduledIdSerializer implements Serializer<ScheduledId> {
   public static final int MIN_SERIALIZED_SIZE = 1 + INSTANT_SIZE;
   public static final int MAX_SERIALIZED_SIZE = MIN_SERIALIZED_SIZE + ID_SIZE;
 
-  private static final ThreadLocal<ByteBuffer> TL_BUFFER = ThreadLocal.withInitial(() -> ByteBuffer.allocate(MAX_SERIALIZED_SIZE));
+  private static final ThreadLocal<ByteBuffer> TL_BUFFER = 
+      ThreadLocal.withInitial(() -> ByteBuffer.allocate(MAX_SERIALIZED_SIZE));
 
   public byte[] serialize(ScheduledId data) {
     return serialize(null, data);
   }
 
+  /**
+   * Serialize a ScheduledId object into bytes.
+   */
   public byte[] serialize(String topic, ScheduledId data) {
     if (data == null) {
       return null;

@@ -2,11 +2,9 @@ package com.rhysmccaig.kscheduler.serialization;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.rhysmccaig.kscheduler.model.ScheduledId;
 import java.time.Instant;
 import java.util.UUID;
-
-import com.rhysmccaig.kscheduler.model.ScheduledId;
-
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;

@@ -1,16 +1,14 @@
 package com.rhysmccaig.kscheduler.serialization;
 
+import static com.rhysmccaig.kscheduler.util.SerializationUtils.putOrderedBytes;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
-
-import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import static com.rhysmccaig.kscheduler.util.SerializationUtils.putOrderedBytes;
-
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serializer;
@@ -42,7 +40,7 @@ public class ScheduledRecordMetadataSerdeTest {
     putOrderedBytes(buffer, EXPIRES);
     putOrderedBytes(buffer, CREATED);
     putOrderedBytes(buffer, ID);
-    buffer.put(DESTINATION.getBytes(StandardCharsets.UTF_8));
+    buffer.put(DESTINATION.getBytes(UTF_8));
     buffer.flip();
     var expected = new byte[buffer.limit()];
     buffer.get(expected);

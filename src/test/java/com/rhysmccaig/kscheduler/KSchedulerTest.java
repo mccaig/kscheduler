@@ -1,15 +1,10 @@
 package com.rhysmccaig.kscheduler;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Properties;
-import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
@@ -17,7 +12,10 @@ import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
 import com.rhysmccaig.kscheduler.streams.SchedulerTransformer;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Properties;
+import java.util.UUID;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
@@ -59,13 +57,18 @@ public class KSchedulerTest {
 
   private ScheduledRecordMetadata metadataScheduledIn1Min;
   
-
+  /**
+   * Test Setup.
+   */
   @BeforeEach
   public void setup() {
     var scheduledRecordStoreBuilder = SchedulerTransformer.getScheduledRecordStoreBuilder();
     var scheduledIdStoreBuilder = SchedulerTransformer.getScheduledIdStoreBuilder();
-    var topology = KScheduler.getTopology(INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, scheduledRecordStoreBuilder, scheduledIdStoreBuilder, PUNCTUATE_DURATION, MAX_DELAY);
-    // As our topology routes output records dynamically, the topics we are testing are not initialized in TopologyTestDriver
+    var topology = KScheduler.getTopology(
+        INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, 
+        scheduledRecordStoreBuilder, scheduledIdStoreBuilder, PUNCTUATE_DURATION, MAX_DELAY);
+    // As our topology routes output records dynamically, 
+    // the topics we are testing are not initialized in TopologyTestDriver
     // Unless we create a dummy sub-topology and add them to it
     topology.addSource("DUMMY_SOURCE", "dummy");
     topology.addSink("DUMMY_OUTPUT_A", OUTPUT_TOPIC_A, "DUMMY_SOURCE");
@@ -77,9 +80,12 @@ public class KSchedulerTest {
     testDriver = new TopologyTestDriver(topology, props, Instant.EPOCH);
     inputTopic = testDriver.createInputTopic(INPUT_TOPIC, new ByteArraySerializer(), new ByteArraySerializer());
     scheduledRecordStore = testDriver.getKeyValueStore(scheduledRecordStoreBuilder.name());
-    outputTopicA = testDriver.createOutputTopic(OUTPUT_TOPIC_A, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-    outputTopicB = testDriver.createOutputTopic(OUTPUT_TOPIC_B, new ByteArrayDeserializer(), new ByteArrayDeserializer());
-    metadataScheduledIn1Min = new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
+    outputTopicA = 
+        testDriver.createOutputTopic(OUTPUT_TOPIC_A, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+    outputTopicB = 
+        testDriver.createOutputTopic(OUTPUT_TOPIC_B, new ByteArrayDeserializer(), new ByteArrayDeserializer());
+    metadataScheduledIn1Min =
+        new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
   }
 
   @AfterEach
@@ -89,12 +95,12 @@ public class KSchedulerTest {
 
   @Test
   public void recordWithNoMetadataIsDropped() {
-    var key = "Hello".getBytes(StandardCharsets.UTF_8);
-    var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var key = "Hello".getBytes(UTF_8);
+    var value = "World!".getBytes(UTF_8);
     var testRecord = new TestRecord<byte[], byte[]>(
         key, 
         value, 
-        new RecordHeaders().add(new RecordHeader("Header", "HeaderValue".getBytes(StandardCharsets.UTF_8))),
+        new RecordHeaders().add(new RecordHeader("Header", "HeaderValue".getBytes(UTF_8))),
         Instant.EPOCH);
     inputTopic.pipeInput(testRecord);
     assertFalse(scheduledRecordStore.all().hasNext());  
@@ -103,11 +109,11 @@ public class KSchedulerTest {
 
   @Test
   public void recordIsForwardedAtScheduledTime() {
-    var key = "Hello".getBytes(StandardCharsets.UTF_8);
-    var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var key = "Hello".getBytes(UTF_8);
+    var value = "World!".getBytes(UTF_8);
     var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
     var headerKey = "HeaderKey";
-    var headerValue = "HeaderValue".getBytes(StandardCharsets.UTF_8);
+    var headerValue = "HeaderValue".getBytes(UTF_8);
     var header = new RecordHeader(headerKey, headerValue);
     var headers = new RecordHeaders();
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
@@ -135,15 +141,18 @@ public class KSchedulerTest {
     assertEquals(2, outputRecord.headers().toArray().length);
     assertEquals(header, outputRecord.headers().lastHeader(headerKey));
     var destinationHeader = outputRecord.headers().lastHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY);
-    var expectedDestinationHeader = new RecordHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, OUTPUT_TOPIC_A.getBytes(StandardCharsets.UTF_8));
+    var expectedDestinationHeader = new RecordHeader(
+        HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, 
+        OUTPUT_TOPIC_A.getBytes(UTF_8));
     assertEquals(expectedDestinationHeader, destinationHeader);
   }
 
   @Test
   public void recordWithExcessiveScheduledTimeIsDropped() {
-    var key = "Hello".getBytes(StandardCharsets.UTF_8);
-    var value = "World!".getBytes(StandardCharsets.UTF_8);
-    var metadataScheduledIn2Hours = new ScheduledRecordMetadata(Instant.EPOCH.plus(Duration.ofHours(2)), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
+    var key = "Hello".getBytes(UTF_8);
+    var value = "World!".getBytes(UTF_8);
+    var metadataScheduledIn2Hours = new ScheduledRecordMetadata(
+          Instant.EPOCH.plus(Duration.ofHours(2)), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_A);
     var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn2Hours);
     var headers = new RecordHeaders();
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
@@ -165,16 +174,17 @@ public class KSchedulerTest {
 
   @Test
   public void updatedRecordIsForwardedToUpdatedTopic() {
-    var key = "Hello".getBytes(StandardCharsets.UTF_8);
-    var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var key = "Hello".getBytes(UTF_8);
+    var value = "World!".getBytes(UTF_8);
     var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
     var headers = new RecordHeaders();
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
     var initialRecord = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
-    var metadataScheduledToNewTopic = new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_B);
+    var metadataScheduledToNewTopic = new ScheduledRecordMetadata(
+          Instant.EPOCH.plus(ONE_MINUTE), Instant.MAX, Instant.MIN, ID, OUTPUT_TOPIC_B);
     var updateHeaders = new RecordHeaders();
-    updateHeaders.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, METADATA_SERIALIZER.serialize(null, metadataScheduledToNewTopic));
-    var updateRecord = new TestRecord<byte[], byte[]>(key, value, updateHeaders, Instant.EPOCH.plus(Duration.ofSeconds(30)));
+    updateHeaders.add(
+          HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, METADATA_SERIALIZER.serialize(null, metadataScheduledToNewTopic));
     inputTopic.pipeInput(initialRecord);
     // No record propogated downstream
     assertTrue(outputTopicA.isEmpty());
@@ -182,6 +192,8 @@ public class KSchedulerTest {
     // Record should still be in the store and no records should be propogated to output topics
     testDriver.advanceWallClockTime(Duration.ofSeconds(30));
     // Send the new record
+    var updateRecord = 
+        new TestRecord<byte[], byte[]>(key, value, updateHeaders, Instant.EPOCH.plus(Duration.ofSeconds(30)));
     inputTopic.pipeInput(updateRecord);
     assertTrue(outputTopicA.isEmpty());
     assertTrue(outputTopicB.isEmpty());
@@ -195,7 +207,8 @@ public class KSchedulerTest {
     assertArrayEquals(value, outputRecord.getValue());
     assertEquals(1, outputRecord.headers().toArray().length);
     var destinationHeader = outputRecord.headers().lastHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY);
-    var expectedDestinationHeader = new RecordHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, OUTPUT_TOPIC_B.getBytes(StandardCharsets.UTF_8));
+    var expectedDestinationHeader = 
+        new RecordHeader(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, OUTPUT_TOPIC_B.getBytes(UTF_8));
     assertEquals(expectedDestinationHeader, destinationHeader);
   }
 
@@ -203,16 +216,18 @@ public class KSchedulerTest {
 
   @Test
   public void deletedRecordIsNotForwarded() {
-    var key = "Hello".getBytes(StandardCharsets.UTF_8);
-    var value = "World!".getBytes(StandardCharsets.UTF_8);
+    var key = "Hello".getBytes(UTF_8);
+    var value = "World!".getBytes(UTF_8);
     var metadataBytes = METADATA_SERIALIZER.serialize(null, metadataScheduledIn1Min);
     var headers = new RecordHeaders();
     headers.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, metadataBytes);
     var initialRecord = new TestRecord<byte[], byte[]>(key, value, headers, Instant.EPOCH);
-    var metadataScheduledAtMinInstant = new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MIN, Instant.MIN, ID, OUTPUT_TOPIC_A);
+    var metadataScheduledAtMinInstant = 
+        new ScheduledRecordMetadata(Instant.EPOCH.plus(ONE_MINUTE), Instant.MIN, Instant.MIN, ID, OUTPUT_TOPIC_A);
     var deleteHeaders = new RecordHeaders();
-    deleteHeaders.add(HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, METADATA_SERIALIZER.serialize(null, metadataScheduledAtMinInstant));
-    var deleteRecord = new TestRecord<byte[], byte[]>(key, value, deleteHeaders, Instant.EPOCH.plus(Duration.ofSeconds(30)));
+    deleteHeaders.add(
+        HeaderUtils.KSCHEDULER_METADATA_HEADER_KEY, 
+        METADATA_SERIALIZER.serialize(null, metadataScheduledAtMinInstant));
     inputTopic.pipeInput(initialRecord);
     // No record propogated downstream
     assertTrue(outputTopicA.isEmpty());
@@ -220,6 +235,8 @@ public class KSchedulerTest {
     // Record should still be in the store and no records should be propogated to output topics
     testDriver.advanceWallClockTime(Duration.ofSeconds(30));
     // Send the new record
+    var deleteRecord = 
+        new TestRecord<byte[], byte[]>(key, value, deleteHeaders, Instant.EPOCH.plus(Duration.ofSeconds(30)));
     inputTopic.pipeInput(deleteRecord);
     assertTrue(outputTopicA.isEmpty());
     // Advance the clock another 30 seconds - original record is scheduled for this time

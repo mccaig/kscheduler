@@ -3,11 +3,9 @@ package com.rhysmccaig.kscheduler.serialization;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import java.time.Instant;
 import java.util.UUID;
-
-import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

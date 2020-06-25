@@ -1,7 +1,6 @@
 package com.rhysmccaig.kscheduler.streams;
 
 import java.util.Map;
-
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
@@ -21,10 +20,18 @@ public class KSchedulerProductionExceptionHandler implements ProductionException
   public ProductionExceptionHandlerResponse handle(ProducerRecord<byte[], byte[]> record, Exception exception) {
     var topicPartition = new TopicPartition(record.topic(), record.partition());
     if (exception instanceof UnknownTopicOrPartitionException) {
-      logger.warn("Unknown TopicPartition: {}, dropping ({} bytes) message with key: {}, ", topicPartition, record.value().length, record.key(), exception);
+      logger.warn("Unknown TopicPartition: {}, dropping ({} bytes) message with key: {}, ", 
+          topicPartition, 
+          record.value().length, 
+          record.key(), 
+          exception);
       return ProductionExceptionHandlerResponse.CONTINUE;
     } else {
-      logger.fatal("ProductionException while producing to TopicPartition: {}, ({} bytes) message with key: {}.", topicPartition, record.value().length, record.key(), exception);
+      logger.fatal("ProductionException while producing to TopicPartition: {}, ({} bytes) message with key: {}.", 
+          topicPartition, 
+          record.value().length, 
+          record.key(), 
+          exception);
       return ProductionExceptionHandlerResponse.FAIL;
     }
   }

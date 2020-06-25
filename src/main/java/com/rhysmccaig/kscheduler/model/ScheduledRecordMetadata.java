@@ -12,6 +12,14 @@ public final class ScheduledRecordMetadata {
   private UUID id;
   private String destination;
   
+  /**
+   * Contains the schedule details of a record.
+   * @param scheduled when the record is scheduled to be delivered
+   * @param expires when the record expires and should be dropped. (eg, if old records exist at server start) 
+   * @param created when the record was first added into the scheduled topic
+   * @param id unique identifier for this record
+   * @param destination topic to deluver record to at scheduled time
+   */
   public ScheduledRecordMetadata(Instant scheduled, Instant expires, Instant created, UUID id, String destination) {
     this.scheduled = Objects.requireNonNull(scheduled, "scheduled must not be null");
     this.expires = Objects.requireNonNull(expires, "expires must not be null");
@@ -42,14 +50,15 @@ public final class ScheduledRecordMetadata {
 
   @Override
   public int hashCode() {
-      return Objects.hash(scheduled, expires, created, id, destination);
+    return Objects.hash(scheduled, expires, created, id, destination);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o == this) return true;
-    if (!(o instanceof ScheduledRecordMetadata)) {
-        return false;
+    if (o == this) {
+      return true;
+    } else if (!(o instanceof ScheduledRecordMetadata)) {
+      return false;
     }
     var co = (ScheduledRecordMetadata) o;
     return Objects.equals(scheduled, co.scheduled)

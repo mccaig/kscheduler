@@ -1,30 +1,25 @@
 package com.rhysmccaig.kscheduler;
 
-import com.typesafe.config.ConfigFactory;
-
-import org.apache.kafka.common.errors.InterruptException;
-import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.common.serialization.Serdes;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.time.Duration;
-import java.util.Properties;
-import java.util.UUID;
-
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
-import com.rhysmccaig.kscheduler.streams.SchedulerTransformer;
-import com.rhysmccaig.kscheduler.streams.SourceToScheduledTransformer;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
+import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
 import com.rhysmccaig.kscheduler.streams.KSchedulerProductionExceptionHandler;
 import com.rhysmccaig.kscheduler.streams.ScheduledDestinationTopicNameExtractor;
 import com.rhysmccaig.kscheduler.streams.ScheduledRecordIdPartitioner;
 import com.rhysmccaig.kscheduler.streams.ScheduledToSourceTransformer;
-import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
-import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
+import com.rhysmccaig.kscheduler.streams.SchedulerTransformer;
+import com.rhysmccaig.kscheduler.streams.SourceToScheduledTransformer;
 import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import java.time.Duration;
+import java.util.Properties;
+import java.util.UUID;
+import org.apache.kafka.common.errors.InterruptException;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
@@ -35,14 +30,19 @@ import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class KScheduler {
-  static final Logger logger = LogManager.getLogger(KScheduler.class); 
+  static final Logger logger = LogManager.getLogger(KScheduler.class);
 
   private static Serde<ScheduledRecordMetadata> METADATA_SERDE = new ScheduledRecordMetadataSerde();
   private static Serde<ScheduledRecord> RECORD_SERDE = new ScheduledRecordSerde();
 
+  /**
+   * Start the kscheduler application.
+   * @param args ignored
+   */
   public static void main(String[] args) {
     final Config config = ConfigFactory.load();
     final Config schedulerConfig = config.getConfig("scheduler");
@@ -53,17 +53,16 @@ public class KScheduler {
 
     Properties streamsProps = ConfigUtils.toProperties(streamsConfig);
     // Force these settings
-    streamsProps.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG, LogAndContinueExceptionHandler.class);
-    streamsProps.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG, KSchedulerProductionExceptionHandler.class);
+    streamsProps.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
+        LogAndContinueExceptionHandler.class);
+    streamsProps.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG,
+        KSchedulerProductionExceptionHandler.class);
 
-    final Topology topology = getTopology(
-        topicsConfig.getString("input"), 
-        topicsConfig.getString("scheduled"),
-        topicsConfig.getString("outgoing"), 
+    final Topology topology = getTopology(topicsConfig.getString("input"), topicsConfig.getString("scheduled"),
+        topicsConfig.getString("outgoing"),
         SchedulerTransformer.getScheduledRecordStoreBuilder(topicsConfig.getString("scheduled-records")),
         SchedulerTransformer.getScheduledIdStoreBuilder(topicsConfig.getString("scheduled-ids")),
-        schedulerConfig.getDuration("punctuate.interval"),
-        schedulerConfig.getDuration("maximum.delay"));
+        schedulerConfig.getDuration("punctuate.interval"), schedulerConfig.getDuration("maximum.delay"));
 
     logger.debug("streams topology: {}", topology.describe());
 
@@ -86,28 +85,32 @@ public class KScheduler {
 
   }
 
-
-
-  
-  public static Topology getTopology(
-      String inputTopic,
-      String scheduledTopic,
-      String outgoingTopic,
+  /**
+   * Returns the topology for the kscheduler application.
+   * @param inputTopic where records arrive from
+   * @param scheduledTopic record are placed in this topic before the scheduler processes them
+   * @param outgoingTopic when a record is ready to be sent to its destination it is first placed into this topic
+   * @param scheduledRecordStoreBuilder builder that will return a key value store to store the scheduled records
+   * @param scheduledIdStoreBuilder builder that will return a key value store that allows a lookup of the 
+   *        scheduled record by id
+   * @param punctuateSchedule how often the scheduler checks for messages to be ready to send
+   * @param maximumDelay the maximum amount of time a record may be scheduled in the future
+   * @return
+   */
+  public static Topology getTopology(String inputTopic, String scheduledTopic, String outgoingTopic,
       StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> scheduledRecordStoreBuilder,
-      StoreBuilder<KeyValueStore<UUID, ScheduledId>> scheduledIdStoreBuilder,
-      Duration punctuateInterval,
+      StoreBuilder<KeyValueStore<UUID, ScheduledId>> scheduledIdStoreBuilder, 
+      Duration punctuateSchedule,
       Duration maximumDelay) {
     var builder = new StreamsBuilder();
-    builder.addStateStore(scheduledRecordStoreBuilder)
-        .addStateStore(scheduledIdStoreBuilder)
+    builder.addStateStore(scheduledRecordStoreBuilder).addStateStore(scheduledIdStoreBuilder)
         .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(SourceToScheduledTransformer::new, Named.as("SOURCE_TO_SCHEDULED"))
         .through(scheduledTopic, Produced.with(METADATA_SERDE, RECORD_SERDE, new ScheduledRecordIdPartitioner()))
         .transform(
-            () -> new SchedulerTransformer(scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name(), punctuateInterval, maximumDelay), 
-            Named.as("SCHEDULER"),
-            scheduledRecordStoreBuilder.name(),
-            scheduledIdStoreBuilder.name())
+            () -> new SchedulerTransformer(scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name(),
+                punctuateSchedule, maximumDelay),
+            Named.as("SCHEDULER"), scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name())
         .through(outgoingTopic, Produced.with(METADATA_SERDE, RECORD_SERDE, new ScheduledRecordIdPartitioner()))
         .transform(ScheduledToSourceTransformer::new, Named.as("SCHEDULED_TO_SOURCE"))
         .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));

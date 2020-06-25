@@ -1,23 +1,21 @@
 package com.rhysmccaig.kscheduler.streams;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
 
 import com.rhysmccaig.kscheduler.model.ScheduledId;
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Properties;
+import java.util.UUID;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.apache.kafka.common.serialization.Serde;
@@ -50,7 +48,9 @@ public class SchedulerTransformerTest {
   private KeyValueStore<ScheduledId, ScheduledRecord> scheduledRecordsStore;
   private KeyValueStore<UUID, ScheduledId> scheduledIdsStore;
 
-
+  /**
+   * Test setup.
+   */
   @BeforeEach
   public void setup() {
     var scheduledRecordsStoreBuilder = SchedulerTransformer.getScheduledRecordStoreBuilder();
@@ -93,14 +93,15 @@ public class SchedulerTransformerTest {
     var destination = "destination.topic";
     var metadata = new ScheduledRecordMetadata(scheduled, expires, created, id, destination);
     // Record
-    var sourceKey = "Hello".getBytes(StandardCharsets.UTF_8);
-    var sourceValue = "World!".getBytes(StandardCharsets.UTF_8);
+    var sourceKey = "Hello".getBytes(UTF_8);
+    var sourceValue = "World!".getBytes(UTF_8);
     var headerKey = "HeaderKey";
-    var headerValue = "HeaderValue".getBytes(StandardCharsets.UTF_8);
+    var headerValue = "HeaderValue".getBytes(UTF_8);
     var header = new RecordHeader(headerKey, headerValue);
     var headers = new RecordHeaders(List.of(header));
     var record = new ScheduledRecord(metadata, sourceKey, sourceValue, headers);
-    var testRecord = new TestRecord<ScheduledRecordMetadata, ScheduledRecord>(metadata, record, headers, TEST_START_TIME);
+    var testRecord = 
+        new TestRecord<ScheduledRecordMetadata, ScheduledRecord>(metadata, record, headers, TEST_START_TIME);
     
     inTopic.pipeInput(testRecord);
     // Expect one record to be in the kvStore after the first record is input
@@ -108,7 +109,7 @@ public class SchedulerTransformerTest {
     // Stored Record headers should not include KScheduler Headers
     var kvStoreIt = scheduledRecordsStore.all();
     var countEntries = 0;
-    while(kvStoreIt.hasNext()) {
+    while (kvStoreIt.hasNext()) {
       countEntries++;
       kvStoreIt.next();
     }
@@ -126,7 +127,7 @@ public class SchedulerTransformerTest {
     testDriver.advanceWallClockTime(Duration.ofSeconds(30));
     kvStoreIt = scheduledRecordsStore.all();
     countEntries = 0;
-    while(kvStoreIt.hasNext()) {
+    while (kvStoreIt.hasNext()) {
       countEntries++;
       kvStoreIt.next();
     }
@@ -153,8 +154,8 @@ public class SchedulerTransformerTest {
     var destination = "destination.topic";
     var metadata = new ScheduledRecordMetadata(scheduled, expires, created, id, destination);
     // Record
-    var sourceKey = "Hello".getBytes(StandardCharsets.UTF_8);
-    var sourceValue = "World!".getBytes(StandardCharsets.UTF_8);
+    var sourceKey = "Hello".getBytes(UTF_8);
+    var sourceValue = "World!".getBytes(UTF_8);
     var record = new ScheduledRecord(metadata, sourceKey, sourceValue, null);
     var scheduledId = new ScheduledId(scheduled, id);
     // Pre populate the store
@@ -162,7 +163,7 @@ public class SchedulerTransformerTest {
     // Expect that there is a record in the kvStore
     var kvStoreIt = scheduledRecordsStore.all();
     var countEntries = 0;
-    while(kvStoreIt.hasNext()) {
+    while (kvStoreIt.hasNext()) {
       countEntries++;
       kvStoreIt.next();
     }
@@ -172,7 +173,7 @@ public class SchedulerTransformerTest {
     testDriver.advanceWallClockTime(Duration.ofSeconds(30));
     kvStoreIt = scheduledRecordsStore.all();
     countEntries = 0;
-    while(kvStoreIt.hasNext()) {
+    while (kvStoreIt.hasNext()) {
       countEntries++;
       kvStoreIt.next();
     }
@@ -198,8 +199,8 @@ public class SchedulerTransformerTest {
     var destination = "destination.topic";
     var metadata = new ScheduledRecordMetadata(scheduled, expires, created, id, destination);
     // Record
-    var sourceKey = "Hello".getBytes(StandardCharsets.UTF_8);
-    var sourceValue = "World!".getBytes(StandardCharsets.UTF_8);
+    var sourceKey = "Hello".getBytes(UTF_8);
+    var sourceValue = "World!".getBytes(UTF_8);
     var record = new ScheduledRecord(metadata, sourceKey, sourceValue, null);
     var testRecord = new TestRecord<ScheduledRecordMetadata, ScheduledRecord>(metadata, record, null, TEST_START_TIME);
     // Test
@@ -213,40 +214,41 @@ public class SchedulerTransformerTest {
   public void existingIdShouldBeUpdatedWithNewMetadataAndRecord() {
     // Record scheduled in one minute
     var initialScheduled = Instant.EPOCH.plus(Duration.ofMinutes(5));
-    var updatedScheduled = Instant.EPOCH.plus(Duration.ofMinutes(1));
     var expires = Instant.MAX;
     var created = Instant.MIN;
     var id = UUID.fromString("a613b80d-56c3-474b-9d6c-25d8273aa111");
     var destination = "destination.topic";
     var initialMetadata = new ScheduledRecordMetadata(initialScheduled, expires, created, id, destination);
-    var updatedMetadata = new ScheduledRecordMetadata(updatedScheduled, expires, created, id, destination);
     // Records
-    var sourceKey = "Hello".getBytes(StandardCharsets.UTF_8);
-    var initialSourceValue = "World!".getBytes(StandardCharsets.UTF_8);
-    var updatedSourceValue = "Universe!".getBytes(StandardCharsets.UTF_8);
+    var sourceKey = "Hello".getBytes(UTF_8);
+    var initialSourceValue = "World!".getBytes(UTF_8);
     var initialRecord = new ScheduledRecord(initialMetadata, sourceKey, initialSourceValue, null);
-    var updatedRecord = new ScheduledRecord(updatedMetadata, sourceKey, updatedSourceValue, null);
     var initialScheduledId = new ScheduledId(initialScheduled, id);
     // Add the initial record into the store
     scheduledRecordsStore.put(initialScheduledId, initialRecord);
     scheduledIdsStore.put(id, initialScheduledId);
     // Updated record to send to topology
-    var testRecord = new TestRecord<ScheduledRecordMetadata, ScheduledRecord>(updatedMetadata, updatedRecord, null, TEST_START_TIME);
     // Test
     var kvStoreIt = scheduledRecordsStore.all();
     var countEntries = 0;
-    while(kvStoreIt.hasNext()) {
+    while (kvStoreIt.hasNext()) {
       countEntries++;
       kvStoreIt.next();
     }
     assertEquals(1, countEntries);
     assertTrue(outTopic.isEmpty());
+    var updatedScheduled = Instant.EPOCH.plus(Duration.ofMinutes(1));
+    var updatedMetadata = new ScheduledRecordMetadata(updatedScheduled, expires, created, id, destination);
+    var updatedSourceValue = "Universe!".getBytes(UTF_8);
+    var updatedRecord = new ScheduledRecord(updatedMetadata, sourceKey, updatedSourceValue, null);
+    var testRecord = 
+        new TestRecord<ScheduledRecordMetadata, ScheduledRecord>(updatedMetadata, updatedRecord, null, TEST_START_TIME);
     inTopic.pipeInput(testRecord);
     // Expect that there is one record persisted in the KV store and no record propogated downstream
     // new record should be in the store
     kvStoreIt = scheduledRecordsStore.all();
     countEntries = 0;
-    while(kvStoreIt.hasNext()) {
+    while (kvStoreIt.hasNext()) {
       countEntries++;
       kvStoreIt.next();
     }
