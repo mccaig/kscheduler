@@ -4,6 +4,7 @@ plugins {
     id 'checkstyle'
     id 'jacoco'
     id "com.google.protobuf" version "0.8.12"
+    id "com.github.johnrengelman.shadow" version "6.0.0"
 }
 
 repositories {
@@ -53,7 +54,12 @@ java {
 }
 
 jacocoTestReport {
-    dependsOn test 
+    dependsOn test
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: 'com/rhysmccaig/kscheduler/model/protos')
+        }))
+    }
 }
 
 test {
