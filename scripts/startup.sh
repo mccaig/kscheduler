@@ -36,5 +36,7 @@ echo "" >> "/opt/config/application.properties"
     done
 )
 
-exec java -Dconfig.file /opt/config/application.properties $JAVA_OPTS -jar "$@"
+sleep 15s
+
+exec java -Dconfig.file=/opt/config/application.properties $JAVA_OPTS -jar "$@"
 

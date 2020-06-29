@@ -67,11 +67,11 @@ public class KScheduler {
     logger.debug("streams topology: {}", topology.describe());
     KafkaStreams streams = new KafkaStreams(topology, streamsProps);
     streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
-      logger.fatal("Uncaught Exception.", throwable);
+      logger.fatal("Uncaught Exception. Exiting.", throwable);
       System.exit(70);
     });
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      logger.info("Executing cleanup as part of shutdown hook");
+      logger.info("Executing cleanup as part of shutdown hook.");
       try {
         streams.close(streamsShutdownTimeout);
       } catch (InterruptException ex) {
