@@ -208,6 +208,7 @@ public class SchedulerTransformer implements
       }
       forwardedRecordCounter.add(count);
       iter.close();
+      context.commit();
     }
 
   }

@@ -60,8 +60,8 @@ public class KScheduler {
 
     final Topology topology = getTopology(topicsConfig.getString("input"), topicsConfig.getString("scheduled"),
         topicsConfig.getString("outgoing"),
-        SchedulerTransformer.getScheduledRecordStoreBuilder(topicsConfig.getString("scheduled-records")),
-        SchedulerTransformer.getScheduledIdStoreBuilder(topicsConfig.getString("scheduled-ids")),
+        SchedulerTransformer.getScheduledRecordStoreBuilder(),
+        SchedulerTransformer.getScheduledIdStoreBuilder(),
         schedulerConfig.getDuration("punctuate.interval"), schedulerConfig.getDuration("maximum.delay"));
 
     logger.debug("streams topology: {}", topology.describe());
