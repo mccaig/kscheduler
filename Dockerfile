@@ -1,40 +1,39 @@
-FROM azul/zulu-openjdk-alpine:11 as packager
+# Stage 1 build app
+FROM azul/zulu-openjdk-debian:14 as BUILD
+COPY *.gradle gradle.* gradlew /src/
+COPY gradle /src/gradle
+COPY scripts /src/scripts
+WORKDIR /src
+COPY . .
+RUN ./gradlew --no-daemon build
 
+# Stage 2 build minimal jre
+FROM azul/zulu-openjdk-debian:14 as packager
 RUN { \
         java --version ; \
         echo "jlink version:" && \
         jlink --version ; \
     }
-
+RUN mkdir /opt
 ENV JAVA_MINIMAL=/opt/jre
-
 # build modules distribution
 RUN jlink \
     --verbose \
-    --add-modules \
-        java.base,java.sql,java.naming,java.desktop,java.management,java.security.jgss,java.instrument \
-        # java.naming - javax/naming/NamingException
-        # java.desktop - java/beans/PropertyEditorSupport
-        # java.management - javax/management/MBeanServer
-        # java.security.jgss - org/ietf/jgss/GSSException
-        # java.instrument - java/lang/instrument/IllegalClassFormatException
+    --add-modules java.base,jdk.unsupported,java.xml,java.desktop,java.management,java.naming \
     --compress 2 \
     --strip-debug \
     --no-header-files \
     --no-man-pages \
     --output "$JAVA_MINIMAL"
 
-COPY *.gradle gradle.* gradlew /src/
-COPY gradle /src/gradle
-WORKDIR /src
-RUN ./gradlew --version
-
-COPY . .
-RUN ./gradlew --no-daemon build
-
-# Stage 2, distribution container
-FROM adoptopenjdk:11-jre-hotspot
-COPY --from=BUILD /src/build/libs/app-all.jar /bin/run.jar
+# Stage 3 assemble final image with custom jre and application
+FROM ubuntu:focal
 RUN mkdir /opt/app
-COPY --from=BUILD /src/build/libs/kscheduler-1.0.0-SNAPSHOT.jar /opt/app/kscheduler.jar
+RUN mkdir /opt/config
+ENV JAVA_MINIMAL=/opt/jre
+ENV PATH="$PATH:$JAVA_MINIMAL/bin"
+COPY --from=packager "$JAVA_MINIMAL" "$JAVA_MINIMAL"
+COPY --from=BUILD /src/scripts /opt/scripts
+COPY --from=BUILD /src/build/libs/kscheduler-1.0.0-SNAPSHOT-all.jar /opt/app/kscheduler.jar
+ENTRYPOINT ["opt/scripts/startup.sh"]
 CMD ["java", "-jar", "/opt/app/kscheduler.jar"]

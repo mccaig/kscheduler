@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class HeaderUtilsTest {
   
@@ -57,8 +58,8 @@ public class HeaderUtilsTest {
    * @param instantString the string to parse
    */
   @ParameterizedTest
-  @CsvSource({
-      "1970-01-01T01:00:00+01:00",    // no TZ
+  @ValueSource(strings = {
+      "1970-01-01T01:0",    
       "1970-01-01T01:00:00",          // no TZ
       "1970-01-01T01:00:00.123456789", // no TZ
       "xyzzy", // gibberish
@@ -69,7 +70,7 @@ public class HeaderUtilsTest {
     byte[] value = instantString.getBytes(UTF_8);
     RecordHeader header = new RecordHeader(key, value);
     var actual = HeaderUtils.parseHeaderAsInstant(header);
-    assertEquals(null, actual);
+    assertNull(actual);
   }
 
   @Test
