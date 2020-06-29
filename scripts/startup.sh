@@ -33,13 +33,8 @@ echo "" >> "/opt/config/application.properties"
             kscheduler_name=$(echo "$env_var" | cut -d_ -f2- | tr '[:upper:]' '[:lower:]' | tr _ .)
             updateConfig "$kscheduler_name" "${!env_var}" "/opt/config/application.properties"
         fi
-
-        if [[ $env_var =~ ^LOG4J_ ]]; then
-            log4j_name=$(echo "$env_var" | tr '[:upper:]' '[:lower:]' | tr _ .)
-            updateConfig "$log4j_name" "${!env_var}" "/opt/config/log4j.properties"
-        fi
     done
 )
 
-exec "$@" $JAVA_OPTS -cp /opt/config
+exec java -Dconfig.file /opt/config/application.properties $JAVA_OPTS -jar "$@"
 

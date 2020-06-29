@@ -31,4 +31,4 @@ ENV PATH="$PATH:$JAVA_MINIMAL/bin"
 COPY --from=BUILD /src/scripts /opt/scripts
 COPY --from=BUILD /src/build/libs/kscheduler-1.0.0-SNAPSHOT-all.jar /opt/app/kscheduler.jar
 ENTRYPOINT ["/opt/scripts/startup.sh"]
-CMD ["java", "-jar", "/opt/app/kscheduler.jar"]
+CMD ["/opt/app/kscheduler.jar"]
