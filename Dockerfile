@@ -9,15 +9,10 @@ RUN ./gradlew --no-daemon build
 
 # Stage 2 build minimal jre
 FROM azul/zulu-openjdk-debian:14 as packager
-RUN { \
-        java --version ; \
-        echo "jlink version:" && \
-        jlink --version ; \
-    }
-RUN mkdir /opt
 ENV JAVA_MINIMAL=/opt/jre
-# build modules distribution
-RUN jlink \
+RUN apt-get -qq update && \
+    apt-get install binutils -y && \
+    jlink \
     --verbose \
     --add-modules java.base,jdk.unsupported,java.xml,java.desktop,java.management,java.naming \
     --compress 2 \
@@ -28,11 +23,11 @@ RUN jlink \
 
 # Stage 3 assemble final image with custom jre and application
 FROM ubuntu:focal
+ENV JAVA_MINIMAL=/opt/jre
 RUN mkdir /opt/app
 RUN mkdir /opt/config
-ENV JAVA_MINIMAL=/opt/jre
-ENV PATH="$PATH:$JAVA_MINIMAL/bin"
 COPY --from=packager "$JAVA_MINIMAL" "$JAVA_MINIMAL"
+ENV PATH="$PATH:$JAVA_MINIMAL/bin"
 COPY --from=BUILD /src/scripts /opt/scripts
 COPY --from=BUILD /src/build/libs/kscheduler-1.0.0-SNAPSHOT-all.jar /opt/app/kscheduler.jar
 ENTRYPOINT ["opt/scripts/startup.sh"]

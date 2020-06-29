@@ -1,0 +1,42 @@
+version: '3.8'
+networks:
+  kscheduler:
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    network: kscheduler
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka
+    depends_on: zookeeper
+    network: kscheduler
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://kafka.local.rhysmccaig.com:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CREATE_TOPICS: "kscheduler-input1:6,kscheduler-scheduled:1:6,kscheduler-outgoing:1:6,test-topic-a:1:6,test-topic-b:1:6,test-topic-c:1:6"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+  kscheduler:
+    build: .
+    depends_on: kafka
+    network: kscheduler
+    ports:
+      - "8080:80"
+    environment:
+      KSCHEDULER_KAFKA_STREAMS_APPLICATION_ID: KScheduler
+      KSCHEDULER_KAFKA_STREAMS_BOOTSTRAP_SERVERS: kafka:9092
+      KSCHEDULER_TOPICS_INPUT: kscheduler-input
+      KSCHEDULER_TOPICS_SCHEDULED: kscheduler-scheduled
+      KSCHEDULER_TOPICS_OUTPUT: kscheduler-output
+      KSCHEDULER_SCHEDULER_MAXIMUM_DELAY: 7d
+      KSCHEDULER_SCHEDULER_PUNCTUATE_INTERVAL: 1s
+      LOG4J_ROOTLOGGER: DEBUG
+
+      
+
+
+  
