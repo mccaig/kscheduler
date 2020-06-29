@@ -25,6 +25,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
+import org.apache.kafka.streams.errors.StreamsException;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
@@ -65,26 +66,24 @@ public class KScheduler {
         schedulerConfig.getDuration("punctuate.interval"), schedulerConfig.getDuration("maximum.delay"));
 
     logger.debug("streams topology: {}", topology.describe());
-
-    try (KafkaStreams streams = new KafkaStreams(topology, streamsProps)) {
-      streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
-        logger.fatal("Uncaught Exception.", throwable);
-        System.exit(70);
-      });
-      // Shutdown hook to clean up resources
-      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-        logger.info("Executing cleanup as part of shutdown hook");
-        try {
-          streams.close(streamsShutdownTimeout);
-        } catch (InterruptException ex) {
-          logger.error("InterruptException while waiting for streams to close.", ex);
-        }
-      }));
-      streams.start();
-    }
+    KafkaStreams streams = new KafkaStreams(topology, streamsProps);
+    streams.setUncaughtExceptionHandler((Thread thread, Throwable throwable) -> {
+      logger.fatal("Uncaught Exception.", throwable);
+      System.exit(70);
+    });
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      logger.info("Executing cleanup as part of shutdown hook");
+      try {
+        streams.close(streamsShutdownTimeout);
+      } catch (InterruptException ex) {
+        logger.error("InterruptException while waiting for streams to close.", ex);
+      }
+    }));
+    streams.start();
 
   }
 
+  
   /**
    * Returns the topology for the kscheduler application.
    * @param inputTopic where records arrive from
