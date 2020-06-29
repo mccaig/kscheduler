@@ -31,8 +31,6 @@ services:
       - kafka
     networks: 
       - kscheduler
-    ports:
-      - "8080:80"
     environment:
       KSCHEDULER_KAFKA_STREAMS_APPLICATION_ID: KScheduler
       KSCHEDULER_KAFKA_STREAMS_BOOTSTRAP_SERVERS: "kafka:19092"
