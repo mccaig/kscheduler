@@ -25,7 +25,6 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
-import org.apache.kafka.streams.errors.StreamsException;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
@@ -83,7 +82,7 @@ public class KScheduler {
 
   }
 
-  
+
   /**
    * Returns the topology for the kscheduler application.
    * @param inputTopic where records arrive from
