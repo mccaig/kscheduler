@@ -1,16 +1,20 @@
 version: '3.8'
 networks:
   kscheduler:
+    name: kscheduler
 services:
   zookeeper:
     image: wurstmeister/zookeeper
-    network: kscheduler
+    networks: 
+      - kscheduler
     ports:
       - "2181:2181"
   kafka:
     image: wurstmeister/kafka
-    depends_on: zookeeper
-    network: kscheduler
+    depends_on: 
+      - zookeeper
+    networks: 
+      - kscheduler
     ports:
       - "9092:9092"
     environment:
@@ -21,9 +25,12 @@ services:
       KAFKA_CREATE_TOPICS: "kscheduler-input1:6,kscheduler-scheduled:1:6,kscheduler-outgoing:1:6,test-topic-a:1:6,test-topic-b:1:6,test-topic-c:1:6"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
   kscheduler:
-    build: .
-    depends_on: kafka
-    network: kscheduler
+    build: 
+      context: .
+    depends_on: 
+      - kafka
+    networks: 
+      - kscheduler
     ports:
       - "8080:80"
     environment:
