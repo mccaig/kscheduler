@@ -17,7 +17,6 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class HeaderUtilsTest {
@@ -59,7 +58,7 @@ public class HeaderUtilsTest {
    */
   @ParameterizedTest
   @ValueSource(strings = {
-      "1970-01-01T01:0",    
+      "1970-01-01T01:00",    
       "1970-01-01T01:00:00",          // no TZ
       "1970-01-01T01:00:00.123456789", // no TZ
       "xyzzy", // gibberish
@@ -275,6 +274,38 @@ public class HeaderUtilsTest {
     headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, metadata.created().toString().getBytes(UTF_8));
     var result = HeaderUtils.extractMetadata(headers);
     assertEquals(null, result);
+  }
+
+  @Test
+  public void extractMetadata_NoMetadataHeaderMissingCreatedReturnsDefault() {
+    var headers = new RecordHeaders();
+    var scheduled = metadata.scheduled();
+    var expires = metadata.expires();
+    var destination = metadata.destination();
+    var id = metadata.id();
+    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, scheduled.toString().getBytes(UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, expires.toString().getBytes(UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, destination.getBytes(UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, SerializationUtils.toOrderedBytes(id));
+    var expected = new ScheduledRecordMetadata(scheduled, expires, Instant.MIN, id, destination);
+    var result = HeaderUtils.extractMetadata(headers);
+    assertEquals(expected, result);
+  }
+
+  @Test
+  public void extractMetadata_NoMetadataHeaderMissingExpiresReturnsDefault() {
+    var headers = new RecordHeaders();
+    var scheduled = metadata.scheduled();
+    var created = metadata.created();
+    var destination = metadata.destination();
+    var id = metadata.id();
+    headers.add(HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, scheduled.toString().getBytes(UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, created.toString().getBytes(UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, destination.getBytes(UTF_8));
+    headers.add(HeaderUtils.KSCHEDULER_ID_HEADER_KEY, SerializationUtils.toOrderedBytes(id));
+    var expected = new ScheduledRecordMetadata(scheduled, Instant.MAX, created, id, destination);
+    var result = HeaderUtils.extractMetadata(headers);
+    assertEquals(expected, result);
   }
 
 

@@ -8,6 +8,7 @@ import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.header.Header;
@@ -56,17 +57,18 @@ public class HeaderUtils {
     // Failed then fallback to individual headers
     if (metadata == null || metadata.scheduled() == null) {
       final var scheduled = parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_SCHEDULED_HEADER_KEY));
-      final var expires = parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_EXPIRES_HEADER_KEY));
-      final var created = parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_CREATED_HEADER_KEY));
+      final var expires = Objects.requireNonNullElse(
+          parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_EXPIRES_HEADER_KEY)), Instant.MAX);
+      final var created = Objects.requireNonNullElse(
+        parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_CREATED_HEADER_KEY)), Instant.MIN);
       final var destinationHeader = headers.lastHeader(KSCHEDULER_DESTINATION_HEADER_KEY);
       var id = parseHeaderAsUuid(headers.lastHeader(KSCHEDULER_ID_HEADER_KEY));
-      if (scheduled != null && expires != null && created != null 
-          && destinationHeader != null && destinationHeader.value() != null) {
+      if (scheduled != null && destinationHeader != null && destinationHeader.value() != null) {
+        final var destination = new String(destinationHeader.value(), UTF_8);
         if (id == null) {
           // If an ID hasnt been set, then set one now.
           id = UUID.randomUUID();
         }
-        final var destination = new String(destinationHeader.value(), UTF_8);
         metadata = new ScheduledRecordMetadata(scheduled, expires, created, id, destination);
       }
     }

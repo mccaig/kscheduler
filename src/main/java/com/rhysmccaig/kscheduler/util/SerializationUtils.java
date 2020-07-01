@@ -44,6 +44,16 @@ public class SerializationUtils {
     };
   }
 
+  public static byte[] toOrderedBytes(UUID val) {
+    var bytes = new byte[16];
+    ByteBuffer.allocate(16)
+        .putLong(val.getMostSignificantBits())
+        .putLong(val.getLeastSignificantBits())
+        .flip()
+        .get(bytes);
+    return bytes;
+  }
+
   /**
    * Converts byte array that has been constructed to order lexicographically into a long.
    * @param bytes the bytes to convert into a long
@@ -91,6 +101,8 @@ public class SerializationUtils {
     return buffer.putLong(uuid.getMostSignificantBits())
                  .putLong(uuid.getLeastSignificantBits());
   }
+
+
 
 
   /**
