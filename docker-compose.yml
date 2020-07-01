@@ -24,16 +24,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CREATE_TOPICS: "kscheduler.input:6:1,kscheduler.scheduled:6:1,kscheduler.outgoing:6:1,test.topic.a:6:1,test.topic.b:6:1,test.topic.c:6:1"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-  kafdrop:
-    image: obsidiandynamics/kafdrop:latest
-    depends_on: 
-      - kafka
-    networks:
-      - kscheduler
-    ports:
-      - "9000:9000"
-    environment:
-      KAFKA_BROKERCONNECT: "kafka:19092"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
   kscheduler:
     build: 
       context: .
