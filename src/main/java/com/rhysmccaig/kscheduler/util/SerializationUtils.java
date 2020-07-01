@@ -44,6 +44,13 @@ public class SerializationUtils {
     };
   }
 
+    /**
+   * Returns a byte array representing an UUID value.
+   * the most significant bits first so that
+   * byte array will sort lexicographically
+   * @param val the long value to convert to bytes
+   * @return
+   */
   public static byte[] toOrderedBytes(UUID val) {
     var bytes = new byte[16];
     ByteBuffer.allocate(16)

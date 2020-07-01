@@ -18,13 +18,20 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 public class HeaderUtils {
     
   public static final String KSCHEDULER_HEADER_KEY_PREFIX = "kscheduler";
-  public static final String KSCHEDULER_METADATA_HEADER_KEY = String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "metadata");
-  public static final String KSCHEDULER_SCHEDULED_HEADER_KEY = String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "scheduled");
-  public static final String KSCHEDULER_ID_HEADER_KEY = String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "id");
-  public static final String KSCHEDULER_DESTINATION_HEADER_KEY = String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "destination");
-  public static final String KSCHEDULER_CREATED_HEADER_KEY = String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "created");
-  public static final String KSCHEDULER_EXPIRES_HEADER_KEY = String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "expires");
-  public static final String KSCHEDULER_ERROR_HEADER_KEY = String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "error");
+  public static final String KSCHEDULER_METADATA_HEADER_KEY = 
+      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "metadata");
+  public static final String KSCHEDULER_SCHEDULED_HEADER_KEY = 
+      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "scheduled");
+  public static final String KSCHEDULER_ID_HEADER_KEY = 
+      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "id");
+  public static final String KSCHEDULER_DESTINATION_HEADER_KEY = 
+      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "destination");
+  public static final String KSCHEDULER_CREATED_HEADER_KEY = 
+      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "created");
+  public static final String KSCHEDULER_EXPIRES_HEADER_KEY = 
+      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "expires");
+  public static final String KSCHEDULER_ERROR_HEADER_KEY = 
+      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "error");
 
   private static final ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
   private static final ScheduledRecordMetadataSerializer SERIALIZER = new ScheduledRecordMetadataSerializer();
@@ -60,7 +67,7 @@ public class HeaderUtils {
       final var expires = Objects.requireNonNullElse(
           parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_EXPIRES_HEADER_KEY)), Instant.MAX);
       final var created = Objects.requireNonNullElse(
-        parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_CREATED_HEADER_KEY)), Instant.MIN);
+          parseHeaderAsInstant(headers.lastHeader(KSCHEDULER_CREATED_HEADER_KEY)), Instant.MIN);
       final var destinationHeader = headers.lastHeader(KSCHEDULER_DESTINATION_HEADER_KEY);
       var id = parseHeaderAsUuid(headers.lastHeader(KSCHEDULER_ID_HEADER_KEY));
       if (scheduled != null && destinationHeader != null && destinationHeader.value() != null) {
