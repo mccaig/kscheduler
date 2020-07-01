@@ -7,6 +7,7 @@ import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataDeserializ
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordMetadataSerializer;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.UUID;
@@ -135,7 +136,7 @@ public class HeaderUtils {
       return null;
     }
     try {
-      return Instant.parse(new String(header.value(), UTF_8));
+      return OffsetDateTime.parse(new String(header.value(), UTF_8)).toInstant();
     } catch (DateTimeParseException ex) {
       return null;
     }
