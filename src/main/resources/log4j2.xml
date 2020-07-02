@@ -11,6 +11,6 @@
         </Root>
         <Logger name="com.rhysmccaig.kscheduler" level="INFO"/>
         <Logger name="org.apache.kafka" level="INFO"/>
-        <Logger name="org.apache.kafka.clients.NetworkClient" level="WARN"/>
+        <Logger name="org.apache.kafka.clients.NetworkClient" level="ERROR"/>
     </Loggers>
 </Configuration>
