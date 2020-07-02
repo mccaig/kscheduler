@@ -58,8 +58,9 @@ public class KScheduler {
     streamsProps.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG,
         KSchedulerProductionExceptionHandler.class);
 
-    final Topology topology = getTopology(topicsConfig.getString("input"), topicsConfig.getString("scheduled"),
-        topicsConfig.getString("outgoing"),
+    final Topology topology = getTopology(
+        topicsConfig.getString("input"), topicsConfig.getString("scheduled"),
+        topicsConfig.getString("outgoing"), topicsConfig.getString("dlq"),
         SchedulerTransformer.getScheduledRecordStoreBuilder(),
         SchedulerTransformer.getScheduledIdStoreBuilder(),
         schedulerConfig.getDuration("punctuate.interval"), schedulerConfig.getDuration("maximum.delay"));
@@ -95,7 +96,8 @@ public class KScheduler {
    * @param maximumDelay the maximum amount of time a record may be scheduled in the future
    * @return
    */
-  public static Topology getTopology(String inputTopic, String scheduledTopic, String outgoingTopic,
+  public static Topology getTopology(
+      String inputTopic, String scheduledTopic, String outgoingTopic, String deadLetterTopic, 
       StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> scheduledRecordStoreBuilder,
       StoreBuilder<KeyValueStore<UUID, ScheduledId>> scheduledIdStoreBuilder, 
       Duration punctuateSchedule,
@@ -111,7 +113,7 @@ public class KScheduler {
             Named.as("SCHEDULER"), scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name())
         .through(outgoingTopic, Produced.with(METADATA_SERDE, RECORD_SERDE, new ScheduledRecordIdPartitioner()))
         .transform(ScheduledToSourceTransformer::new, Named.as("SCHEDULED_TO_SOURCE"))
-        .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
+        .to(new ScheduledDestinationTopicNameExtractor(deadLetterTopic), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
     return builder.build();
   }
 

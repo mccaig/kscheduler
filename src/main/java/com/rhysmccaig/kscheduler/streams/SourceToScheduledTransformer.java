@@ -26,6 +26,12 @@ public class SourceToScheduledTransformer
   @Override
   public KeyValue<ScheduledRecordMetadata, ScheduledRecord> transform(Bytes key, Bytes value) {
     var headers = this.context.headers();
+    if (headers == null 
+      || headers.lastHeader(HeaderUtils.KSCHEDULER_FORWARDED_AT_HEADER_KEY) != null) {
+        // if there are no headers, or this record has already been forwarded
+        // then drop the record
+        return null;
+      }
     var metadata = HeaderUtils.extractMetadata(headers, true);
     if (metadata != null) {
       var record = new ScheduledRecord(metadata, key.get(), value.get(), headers);

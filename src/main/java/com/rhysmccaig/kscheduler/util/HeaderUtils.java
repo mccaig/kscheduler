@@ -18,21 +18,24 @@ import org.apache.kafka.common.header.internals.RecordHeaders;
 
 public class HeaderUtils {
     
-  public static final String KSCHEDULER_HEADER_KEY_PREFIX = "kscheduler";
+  public static final String KSCHEDULER_HEADER_KEY_PREFIX = "x-kscheduler";
+  public static final String DELIMITER = ".";
   public static final String KSCHEDULER_METADATA_HEADER_KEY = 
-      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "metadata");
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "metadata");
   public static final String KSCHEDULER_SCHEDULED_HEADER_KEY = 
-      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "scheduled");
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "scheduled");
   public static final String KSCHEDULER_ID_HEADER_KEY = 
-      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "id");
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "id");
   public static final String KSCHEDULER_DESTINATION_HEADER_KEY = 
-      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "destination");
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "destination");
   public static final String KSCHEDULER_CREATED_HEADER_KEY = 
-      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "created");
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "created");
   public static final String KSCHEDULER_EXPIRES_HEADER_KEY = 
-      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "expires");
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "expires");
   public static final String KSCHEDULER_ERROR_HEADER_KEY = 
-      String.join(".", KSCHEDULER_HEADER_KEY_PREFIX, "error");
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "error");
+  public static final String KSCHEDULER_FORWARDED_AT_HEADER_KEY = 
+      String.join(DELIMITER, KSCHEDULER_HEADER_KEY_PREFIX, "forwarded.at");
 
   private static final ScheduledRecordMetadataDeserializer DESERIALIZER = new ScheduledRecordMetadataDeserializer();
   private static final ScheduledRecordMetadataSerializer SERIALIZER = new ScheduledRecordMetadataSerializer();
@@ -81,14 +84,24 @@ public class HeaderUtils {
       }
     }
     if (remove) {
-      headers.remove(KSCHEDULER_METADATA_HEADER_KEY);
-      headers.remove(KSCHEDULER_SCHEDULED_HEADER_KEY);
-      headers.remove(KSCHEDULER_ID_HEADER_KEY);
-      headers.remove(KSCHEDULER_DESTINATION_HEADER_KEY);
-      headers.remove(KSCHEDULER_CREATED_HEADER_KEY);
-      headers.remove(KSCHEDULER_EXPIRES_HEADER_KEY);
+      stripKschedulerHeaders(headers);
     }
     return metadata;
+  }
+
+  /**
+   * Strip kscheduler headers from a record
+   * @param headers the headers object to be stripped of kscheduler headers
+   * @return
+   */
+  public static Headers stripKschedulerHeaders(Headers headers) {
+    headers.remove(KSCHEDULER_METADATA_HEADER_KEY);
+    headers.remove(KSCHEDULER_SCHEDULED_HEADER_KEY);
+    headers.remove(KSCHEDULER_ID_HEADER_KEY);
+    headers.remove(KSCHEDULER_DESTINATION_HEADER_KEY);
+    headers.remove(KSCHEDULER_CREATED_HEADER_KEY);
+    headers.remove(KSCHEDULER_EXPIRES_HEADER_KEY);
+    return headers;
   }
 
   /**

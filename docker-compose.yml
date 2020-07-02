@@ -22,7 +22,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://kafka.local.rhysmccaig.com:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_CREATE_TOPICS: "kscheduler.input:6:1,kscheduler.scheduled:6:1,kscheduler.outgoing:6:1,test.topic.a:6:1,test.topic.b:6:1,test.topic.c:6:1"
+      KAFKA_CREATE_TOPICS: "kscheduler.input:6:1,kscheduler.scheduled:6:1,kscheduler.outgoing:6:1,kscheduler.dlq:6:1,test.topic.a:6:1,test.topic.b:6:1,test.topic.c:6:1"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
   kscheduler:
@@ -39,6 +39,7 @@ services:
       KSCHEDULER_TOPICS_INPUT: kscheduler.input
       KSCHEDULER_TOPICS_SCHEDULED: kscheduler.scheduled
       KSCHEDULER_TOPICS_OUTPUT: kscheduler.output
+      KSCHEDULER_TOPICS_DLQ: kscheduler.dlq
       KSCHEDULER_SCHEDULER_MAXIMUM_DELAY: 7d
       KSCHEDULER_SCHEDULER_PUNCTUATE_INTERVAL: 1s
       LOG4J_ROOTLOGGER: DEBUG

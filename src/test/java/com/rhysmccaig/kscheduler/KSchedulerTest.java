@@ -43,6 +43,7 @@ public class KSchedulerTest {
   private static String INPUT_TOPIC = "inputtopic";
   private static String SCHEDULED_TOPIC = "scheduledtopic";
   private static String OUTGOING_TOPIC = "outgoingtopic";
+  private static String DLQ_TOPIC = "dlqtopic";
   private static Duration ONE_MINUTE = Duration.ofMinutes(1);
   private static String OUTPUT_TOPIC_A = "output.topic.a";
   private static String OUTPUT_TOPIC_B = "output.topic.b";
@@ -65,7 +66,7 @@ public class KSchedulerTest {
     var scheduledRecordStoreBuilder = SchedulerTransformer.getScheduledRecordStoreBuilder();
     var scheduledIdStoreBuilder = SchedulerTransformer.getScheduledIdStoreBuilder();
     var topology = KScheduler.getTopology(
-        INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, 
+        INPUT_TOPIC, SCHEDULED_TOPIC, OUTGOING_TOPIC, DLQ_TOPIC,
         scheduledRecordStoreBuilder, scheduledIdStoreBuilder, PUNCTUATE_DURATION, MAX_DELAY);
     // As our topology routes output records dynamically, 
     // the topics we are testing are not initialized in TopologyTestDriver

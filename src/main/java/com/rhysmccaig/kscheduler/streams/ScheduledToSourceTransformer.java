@@ -2,6 +2,8 @@ package com.rhysmccaig.kscheduler.streams;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.time.Instant;
+
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
@@ -27,18 +29,35 @@ public class ScheduledToSourceTransformer
   /**
    * Transforms records back into the pre-scheduled key and payload.
    */
-  public KeyValue<Bytes, Bytes> transform(ScheduledRecordMetadata key, ScheduledRecord value) {
+  public KeyValue<Bytes, Bytes> transform(ScheduledRecordMetadata metadata, ScheduledRecord record) {
     if (context.headers() == null) {
       // if the headers are null then we are probably directly attached to a stateful processor
       // Unfortunately streams doesnt have a way to set
       logger.warn("Dropping record: Unable to set destination header. Route events via topic first.");
     } else {
-      value.headers().forEach(header -> context.headers().add(header));
-      context.headers()
-          .add(HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, key.destination().getBytes(UTF_8));
-      final var newKey = new Bytes(value.key());
-      final var newValue = new Bytes(value.value());
-      context.forward(newKey, newValue);
+      record.headers().forEach(header -> context.headers().add(header));
+      HeaderUtils.stripKschedulerHeaders(context.headers());
+      context.headers().add(
+          HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, 
+          metadata.destination().getBytes(UTF_8));
+      context.headers().add(
+          HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, 
+          metadata.scheduled().toString().getBytes(UTF_8));
+      context.headers().add(
+          HeaderUtils.KSCHEDULER_EXPIRES_HEADER_KEY, 
+          metadata.expires().toString().getBytes(UTF_8));
+      context.headers().add(
+          HeaderUtils.KSCHEDULER_CREATED_HEADER_KEY, 
+          metadata.created().toString().getBytes(UTF_8));
+      context.headers().add(
+          HeaderUtils.KSCHEDULER_ID_HEADER_KEY, 
+          metadata.id().toString().getBytes(UTF_8));
+      context.headers().add(
+        HeaderUtils.KSCHEDULER_FORWARDED_AT_HEADER_KEY, 
+        Instant.ofEpochMilli(context.timestamp()).toString().getBytes(UTF_8));
+      final var key = new Bytes(record.key());
+      final var value = new Bytes(record.value());
+      context.forward(key, value);
     }
     return null;
   }
