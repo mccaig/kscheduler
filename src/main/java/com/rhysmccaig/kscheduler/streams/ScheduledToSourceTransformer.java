@@ -30,6 +30,7 @@ public class ScheduledToSourceTransformer
    * Transforms records back into the pre-scheduled key and payload.
    */
   public KeyValue<Bytes, Bytes> transform(ScheduledRecordMetadata metadata, ScheduledRecord record) {
+    // TODO: Check state store? (or in memory structure) to see if topic exists?
     if (context.headers() == null) {
       // if the headers are null then we are probably directly attached to a stateful processor
       // Unfortunately streams doesnt have a way to set
