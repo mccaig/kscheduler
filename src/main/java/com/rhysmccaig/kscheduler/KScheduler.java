@@ -104,8 +104,7 @@ public class KScheduler {
       Duration punctuateSchedule,
       Duration maximumDelay) {
     var builder = new StreamsBuilder();
-    @SuppressWarnings("unchecked")
-    KStream<ScheduledRecordMetadata, ScheduledRecord>[] branched = builder
+    builder
         .addStateStore(scheduledRecordStoreBuilder).addStateStore(scheduledIdStoreBuilder)
         .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(SourceToScheduledTransformer::new, Named.as("SOURCE_TO_SCHEDULED"))
@@ -115,23 +114,8 @@ public class KScheduler {
                 punctuateSchedule, maximumDelay),
             Named.as("SCHEDULER"), scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name())
         .through(outgoingTopic, Produced.with(METADATA_SERDE, RECORD_SERDE, new ScheduledRecordIdPartitioner()))
-        // Branch here based on destination topic
-        // TODO: Instead of branching, can the transformer hold a record in aa state store while 
-        // waiting to find out if the topic exists?
-        .branch(
-            Named.as("TOPIC_KNOWN_TO_EXIST"), 
-            (k, v) -> false,
-            (k, v) -> true);
-    var topicKnownToExist = branched[0];
-    topicKnownToExist
         .transform(ScheduledToSourceTransformer::new, Named.as("SCHEDULED_TO_SOURCE"))
         .to(new ScheduledDestinationTopicNameExtractor(deadLetterTopic), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
-    var topicUnknown = branched[1];
-    topicUnknown
-        .transform(ScheduledToSourceTransformer::new, Named.as("SCHEDULED_TO_SOURCE"))
-        .to(new ScheduledDestinationTopicNameExtractor(deadLetterTopic), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
-
-
     return builder.build();
   }
 
