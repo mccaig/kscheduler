@@ -3,34 +3,50 @@ package com.rhysmccaig.kscheduler.streams;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.time.Instant;
+import java.util.Objects;
 
 import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
+import com.rhysmccaig.kscheduler.model.TopicSettings;
 import com.rhysmccaig.kscheduler.util.HeaderUtils;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ScheduledToSourceTransformer 
+
+public class ScheduledToDestinationTransformer 
     implements Transformer<ScheduledRecordMetadata, ScheduledRecord, KeyValue<Bytes, Bytes>> {
   
-  private static Logger logger = LogManager.getLogger(ScheduledToSourceTransformer.class);
+  private static Logger logger = LoggerFactory.getLogger(ScheduledToDestinationTransformer.class);
 
+  private String topicSettingsStateStoreName;
+  private ReadOnlyKeyValueStore<String, TopicSettings> topicSettingsStore;
   private ProcessorContext context;
+
+  public ScheduledToDestinationTransformer(String topicSettingsStateStoreName) {
+    this.topicSettingsStateStoreName = topicSettingsStateStoreName;
+  }
+
+  public ScheduledToDestinationTransformer() {
+    this(null);
+  }
 
   @Override
   public void init(ProcessorContext context) {
     this.context = context;
+    if (topicSettingsStateStoreName != null) {
+      this.topicSettingsStore = (ReadOnlyKeyValueStore<String, TopicSettings>) context.getStateStore(topicSettingsStateStoreName);
+    }
   }
 
   /**
    * Transforms records back into the pre-scheduled key and payload.
    */
   public KeyValue<Bytes, Bytes> transform(ScheduledRecordMetadata metadata, ScheduledRecord record) {
-    // TODO: Check state store? (or in memory structure) to see if topic exists?
     if (context.headers() == null) {
       // if the headers are null then we are probably directly attached to a stateful processor
       // Unfortunately streams doesnt have a way to set
@@ -38,9 +54,17 @@ public class ScheduledToSourceTransformer
     } else {
       record.headers().forEach(header -> context.headers().add(header));
       HeaderUtils.stripKschedulerHeaders(context.headers());
-      context.headers().add(
+      var topic = metadata.destination();
+      if (schedulingIsDisabled(topic)) {
+        var errorMessage = "Scheduled record delivery is disabled for the topic: " + topic;
+        context.headers().add(
+            HeaderUtils.KSCHEDULER_ERROR_HEADER_KEY, 
+            errorMessage.getBytes(UTF_8));
+      } else {
+        context.headers().add(
           HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, 
-          metadata.destination().getBytes(UTF_8));
+          topic.getBytes(UTF_8));
+      }
       context.headers().add(
           HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, 
           metadata.scheduled().toString().getBytes(UTF_8));
@@ -65,6 +89,16 @@ public class ScheduledToSourceTransformer
 
   public void close() {
     // noop
+  }
+
+  private boolean schedulingIsDisabled(String topic) {
+    if (topicSettingsStore != null) {
+      var settings = topicSettingsStore.get(topic);
+      if (settings != null) {
+        return settings.getSchedulingDisabled();
+      }
+    }
+    return false;
   }
 
 }

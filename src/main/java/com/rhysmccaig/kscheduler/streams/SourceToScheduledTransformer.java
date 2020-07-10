@@ -8,13 +8,12 @@ import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 public class SourceToScheduledTransformer
     implements Transformer<Bytes, Bytes, KeyValue<ScheduledRecordMetadata, ScheduledRecord>> {
   
-  static final Logger logger = LogManager.getLogger(SourceToScheduledTransformer.class); 
+  static final Logger logger = LoggerFactory.getLogger(SourceToScheduledTransformer.class); 
 
   private ProcessorContext context;
 

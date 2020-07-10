@@ -6,11 +6,11 @@ import java.util.Arrays;
 import java.util.Objects;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.header.internals.RecordHeaders;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ScheduledRecord {
-  static final Logger logger = LogManager.getLogger(ScheduledRecord.class); 
+  static final Logger logger = LoggerFactory.getLogger(ScheduledRecord.class); 
 
   private ScheduledRecordMetadata metadata;
   private byte[] key;

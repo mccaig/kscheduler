@@ -1,11 +1,7 @@
 plugins {
     id 'java'
-    id 'application'
-    id 'checkstyle'
-    id 'jacoco'
-    id "com.google.protobuf" version "0.8.12"
-    id "com.github.johnrengelman.shadow" version "6.0.0"
-    id 'org.kordamp.gradle.jdeps' version '0.11.0' apply false
+    id 'io.quarkus'
+    id 'com.google.protobuf' version '0.8.10'
 }
 
 repositories {
@@ -14,48 +10,47 @@ repositories {
 }
 
 dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}") {
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
+    }
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy-jsonb'
+    implementation group: 'io.quarkus', name: 'quarkus-resteasy'
+    implementation group: 'io.quarkus', name: 'quarkus-logging-json'
+    implementation group: 'io.quarkus', name: 'quarkus-cache'
+    implementation group: 'io.quarkus', name: 'quarkus-config-yaml'
+    implementation group: 'io.quarkus', name: 'quarkus-kafka-streams'
+    implementation group: 'io.quarkus', name: 'quarkus-kafka-client'
+    implementation group: 'io.quarkus', name: 'quarkus-smallrye-health'
+    implementation group: 'io.quarkus', name: 'quarkus-smallrye-metrics'
     implementation group: 'org.apache.kafka', name: 'kafka-clients', version: '2.5.0'
     implementation group: 'org.apache.kafka', name: 'kafka-streams', version: '2.5.0'
-    implementation group: 'com.typesafe', name: 'config', version: '1.4.0'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.13.3'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.13.3'
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.13.3'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.11.1'
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.12.2'
-    implementation group: 'io.opentelemetry', name: 'opentelemetry-sdk', version: '0.5.0'
-    
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter', version: '5.6.2'
+
+    testImplementation group: 'io.quarkus', name: 'quarkus-junit5'
+    testImplementation group: 'io.rest-assured', name: 'rest-assured'
     testImplementation group: 'org.apache.kafka', name: 'kafka-streams-test-utils', version: '2.5.0'
+
 }
 
-group 'com.rhysmccaig.kscheduler'
+group 'com.rhysmccaig'
 version '1.0.0-SNAPSHOT'
-
-application {
-    mainClassName = 'com.rhysmccaig.kscheduler.KScheduler'
-}
-
-checkstyle {
-	toolVersion '8.33'
-    configFile file("${project.rootDir}/config/checkstyle/google_checks.xml")
-}
 
 compileJava {
     options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
 }
 
 compileTestJava {
     options.encoding = 'UTF-8'
 }
 
-// jdepsReport {
-//     multiRelease 14
-//     recursive true
-// }
-
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }
 
 protobuf {
@@ -64,20 +59,9 @@ protobuf {
         artifact = 'com.google.protobuf:protoc:3.12.2'
     }
 }
-
-jacocoTestReport {
-    dependsOn test
-    afterEvaluate {
-        classDirectories.setFrom(files(classDirectories.files.collect {
-            fileTree(dir: it, exclude: 'com/rhysmccaig/kscheduler/model/protos')
-        }))
-    }
-}
-
-test {
-    useJUnitPlatform()
-    enableAssertions = true
-    finalizedBy jacocoTestReport
+project.configurations {
+  //create("native-testCompileProtoPath")
+  create("native-testCompile")
 }
 
 sourceSets {

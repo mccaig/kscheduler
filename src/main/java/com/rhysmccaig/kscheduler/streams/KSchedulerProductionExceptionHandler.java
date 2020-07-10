@@ -7,11 +7,12 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.apache.kafka.streams.errors.ProductionExceptionHandler;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class KSchedulerProductionExceptionHandler implements ProductionExceptionHandler {
-  static final Logger logger = LogManager.getLogger(KSchedulerProductionExceptionHandler.class); 
+  static final Logger logger = LoggerFactory.getLogger(KSchedulerProductionExceptionHandler.class); 
 
   @Override
   public void configure(Map<String, ?> configs) {
@@ -31,7 +32,7 @@ public class KSchedulerProductionExceptionHandler implements ProductionException
           exception);
       return ProductionExceptionHandlerResponse.CONTINUE;
     } else {
-      logger.fatal("ProductionException while producing to TopicPartition: {}, ({} bytes) message with key: {}.", 
+      logger.error("ProductionException while producing to TopicPartition: {}, ({} bytes) message with key: {}.", 
           topicPartition, 
           record.value().length, 
           record.key(), 
