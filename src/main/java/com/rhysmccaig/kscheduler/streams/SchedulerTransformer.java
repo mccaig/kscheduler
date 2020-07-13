@@ -157,7 +157,6 @@ public class SchedulerTransformer implements
       // ScheduledIdSerializer takes this into account
       KeyValueIterator<ScheduledId, ScheduledRecord> iter = scheduledRecordStore.range(from, to);
       // var count = 0;
-      
       while (iter.hasNext()) {
         KeyValue<ScheduledId, ScheduledRecord> entry = iter.next();
         var value = entry.value;
