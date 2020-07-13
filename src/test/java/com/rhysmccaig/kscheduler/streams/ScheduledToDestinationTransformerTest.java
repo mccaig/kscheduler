@@ -18,7 +18,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ScheduledToSourceTransformerTest {
+public class ScheduledToDestinationTransformerTest {
   
   private static Instant SCHEDULED = Instant.EPOCH;
   private static Instant EXPIRES = Instant.MAX;
@@ -31,7 +31,7 @@ public class ScheduledToSourceTransformerTest {
   private static byte[] KEY = "Hello".getBytes(UTF_8);
   private static byte[] VALUE = "World!".getBytes(UTF_8);
 
-  private ScheduledToSourceTransformer transformer;
+  private ScheduledToDestinationTransformer transformer;
   private MockProcessorContext context;
 
   /**
@@ -40,7 +40,7 @@ public class ScheduledToSourceTransformerTest {
   @BeforeEach
   public void setup() {
     context = new MockProcessorContext();
-    transformer = new ScheduledToSourceTransformer();
+    transformer = new ScheduledToDestinationTransformer();
     transformer.init(context);
   }
 
