@@ -1,62 +1,3 @@
-kscheduler:
-  hostname: null
-  port: 80
-  maximum:
-    delay: P7D
-  punctuate:
-    schedule: PT1S
-  defaults:
-    scheduling-enabled: true
-    ignore-topic-errors: false
-  topics:
-    input: kscheduler.input
-    scheduled: kscheduler.scheduled
-    outgoing: kscheduler.outgoing
-    dlq: kscheduler.dlq
-    topic-settings: kscheduler.topic-settings
-  kafka:
-    application:
-      id: kscheduler
-      server: ${kscheduler.hostname}:${kscheduler.port}
-    default:
-      deserialization:
-        exception:
-          handler: org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
-      production:
-        exception:
-          handler: com.rhysmccaig.kscheduler.streams.KSchedulerProductionExceptionHandler
-    metadata:
-      max:
-        idle:
-          ms: 3600000 # If we havent produced to a topic in an hour, stop refreshing its metadata into cache
-
-quarkus:
-  http:
-    root-path: /
-    port: ${kscheduler.port}
-    host: ${kscheduler.hostname}
-  shutdown:
-    timeout: 15s
-  log:
-    console:
-      level: INFO
-      enable: true
-      json:
-        ~: true
-  kafka-streams:
-    application-server: ${kscheduler.kafka.application.server}
-    application-id: ${kscheduler.kafka.application.id}
-    bootstrap-servers: ${kscheduler.kafka.bootstrap.servers}
-    topics: 
-      - ${kscheduler.topics.input}
-      - ${kscheduler.topics.scheduled}
-      - ${kscheduler.topics.outgoing}
-      - ${kscheduler.topics.dlq}
-      - ${kscheduler.topics.topic-settings}
-# inherit directly from kscheduler settings
-kafka-streams: ${kscheduler.kafka}
-kafka: ${kscheduler.kafka}
-
 "%dev":
   kscheduler:
     hostname: kscheduler.local.rhysmccaig.com
@@ -103,3 +44,62 @@ kafka: ${kscheduler.kafka}
       console:
         json:
           ~: false
+
+          
+kscheduler:
+  hostname: null
+  port: 80
+  maximum:
+    delay: P7D
+  punctuate:
+    schedule: PT1S
+  defaults:
+    scheduling-enabled: true
+    ignore-topic-errors: false
+  topics:
+    input: kscheduler.input
+    scheduled: kscheduler.scheduled
+    outgoing: kscheduler.outgoing
+    dlq: kscheduler.dlq
+    topic-settings: kscheduler.topic-settings
+  kafka:
+    application:
+      id: kscheduler
+      server: ${kscheduler.hostname}:${kscheduler.port}
+    default:
+      deserialization:
+        exception:
+          handler: org.apache.kafka.streams.errors.LogAndContinueExceptionHandler
+      production:
+        exception:
+          handler: com.rhysmccaig.kscheduler.streams.KSchedulerProductionExceptionHandler
+    metadata:
+      max:
+        idle:
+          ms: 3600000 # If we havent produced to a topic in an hour, stop refreshing its metadata into cache
+quarkus:
+  http:
+    root-path: /
+    port: ${kscheduler.port}
+    host: ${kscheduler.hostname}
+  shutdown:
+    timeout: 15s
+  log:
+    console:
+      level: INFO
+      enable: true
+      json:
+        ~: true
+  kafka-streams:
+    application-server: ${kscheduler.kafka.application.server}
+    application-id: ${kscheduler.kafka.application.id}
+    bootstrap-servers: ${kscheduler.kafka.bootstrap.servers}
+    topics: 
+      - ${kscheduler.topics.input}
+      - ${kscheduler.topics.scheduled}
+      - ${kscheduler.topics.outgoing}
+      - ${kscheduler.topics.dlq}
+      - ${kscheduler.topics.topic-settings}
+# inherit directly from kscheduler settings
+kafka-streams: ${kscheduler.kafka}
+kafka: ${kscheduler.kafka}
