@@ -44,8 +44,8 @@ public class SchedulerTransformer implements
   private ProcessorContext context;
   private String scheduledRecordStoreName;
   private String scheduledIdStoreName;
-  private KeyValueStore<ScheduledId, ScheduledRecord> scheduledRecordStore;
-  private KeyValueStore<UUID, ScheduledId> scheduledIdStore;
+  private KeyValueStore<UUID, ScheduledRecord> scheduledRecordStore;
+  private KeyValueStore<ScheduledId, UUID> scheduledIdMappingStore;
 
   private Duration punctuateSchedule;  
   private Duration maximumDelay; 
@@ -58,17 +58,17 @@ public class SchedulerTransformer implements
   /**
    * The core scheduling logic of the application.
    * @param scheduledRecordStoreName name of state store for scheduled records
-   * @param scheduledIdStoreName name of state store for scheduled records id lookup
+   * @param scheduledIdMappingStoreName name of state store for scheduled records id lookup
    * @param punctuateSchedule how often the scheduler checks for messages to be ready to send
    * @param maximumDelay the maximum amount of time a record may be scheduled in the future
    */
   public SchedulerTransformer(
       String scheduledRecordStoreName, 
-      String scheduledIdStoreName, 
+      String scheduledIdMappingStoreName, 
       Duration punctuateSchedule, 
       Duration maximumDelay) {
     this.scheduledRecordStoreName = Objects.requireNonNull(scheduledRecordStoreName);
-    this.scheduledIdStoreName = Objects.requireNonNull(scheduledIdStoreName);
+    this.scheduledIdStoreName = Objects.requireNonNull(scheduledIdMappingStoreName);
     this.punctuateSchedule = Objects.requireNonNullElse(punctuateSchedule, DEFAULT_PUNCTUATE_INTERVAL);
     this.maximumDelay = Objects.requireNonNullElse(maximumDelay, DEFAULT_MAXIMUM_DELAY);
     // recordCounter = meter.longCounterBuilder("processed_records")
@@ -91,8 +91,8 @@ public class SchedulerTransformer implements
   public void init(ProcessorContext ctx) {
     context = ctx;
     scheduledRecordStore = 
-        (KeyValueStore<ScheduledId, ScheduledRecord>) context.getStateStore(scheduledRecordStoreName);
-    scheduledIdStore = (KeyValueStore<UUID, ScheduledId>) context.getStateStore(scheduledIdStoreName);
+        (KeyValueStore<UUID, ScheduledRecord>) context.getStateStore(scheduledRecordStoreName);
+    scheduledIdMappingStore = (KeyValueStore<ScheduledId, UUID>) context.getStateStore(scheduledIdStoreName);
     // schedule a punctuate() based on wall-clock time
     this.context.schedule(punctuateSchedule, PunctuationType.WALL_CLOCK_TIME, new SchedulerPunctuator());
   }
@@ -109,22 +109,26 @@ public class SchedulerTransformer implements
     } else {
       // transformValidCounter.add(1);
       // Before we do anything, check if we already have a record for this id and remove it from the stores
-      var staleRecord = scheduledIdStore.delete(id);
+      var staleRecord = scheduledRecordStore.delete(id);
       if (staleRecord != null) {
-        scheduledRecordStore.delete(staleRecord);
+        scheduledIdMappingStore.delete(new ScheduledId(staleRecord.metadata().scheduled(), id));
       }
       // If a records expiry time is after the scheduled time, then add it into our state stores for later processing
-      // Ensure that the scheduled time isnt too far in the future
       if (metadata.expires().isAfter(metadata.scheduled())) {
         var recordTimestamp = Instant.ofEpochMilli(context.timestamp());
+        // Ensure that the scheduled time isnt too far in the future past our configured limit
         if (metadata.scheduled().isBefore(recordTimestamp.plus(maximumDelay))) {
           var sid = new ScheduledId(metadata.scheduled(), metadata.id());
-          scheduledRecordStore.put(sid, record);
-          scheduledIdStore.put(id, sid);
+          scheduledRecordStore.put(id, record);
+          scheduledIdMappingStore.put(sid, id);
           // scheduledRecordCounter.add(1);
         } else {
-          logger.info("Dropped record scheduled after the maximum delay. {}", metadata);
+          // TODO: Add metric
+          logger.debug("Dropping record scheduled after the maximum delay. {}", metadata);
         }
+      } else {
+        // TODO: Add metric
+        logger.debug("Dropping record which expires before the scheduled time. {}", metadata);
       }
     }
     // We never forward records at this time, only during punctuatation.
@@ -137,7 +141,7 @@ public class SchedulerTransformer implements
   public void close() {
     context = null;
     scheduledRecordStore = null;
-    scheduledIdStore = null;
+    scheduledIdMappingStore = null;
     punctuateSchedule = null;
     // recordCounter = null;
     // transformValidCounter = transformInvalidCounter  = scheduledRecordCounter = forwardedRecordCounter = null;
@@ -153,16 +157,18 @@ public class SchedulerTransformer implements
       var beforeInstant = Instant.ofEpochMilli(timestamp).plusNanos(1);
       var from = new ScheduledId(Instant.MIN, null);
       var to = new ScheduledId(beforeInstant, null);
-      // Cant yet define our insertion order, but by default RocksDB orders items lexicographically
-      // ScheduledIdSerializer takes this into account
-      KeyValueIterator<ScheduledId, ScheduledRecord> iter = scheduledRecordStore.range(from, to);
+      // Unfortunately there isnt yet a way in kafka streams to define a comparator function for ordering
+      // By default RocksDB orders items lexicographically, ScheduledIdSerializer takes this into account
+      // and serializes the object sccordingly
+      KeyValueIterator<ScheduledId, UUID> iter = scheduledIdMappingStore.range(from, to);
       // var count = 0;
       while (iter.hasNext()) {
-        KeyValue<ScheduledId, ScheduledRecord> entry = iter.next();
-        var value = entry.value;
+        // mapping kv
+        KeyValue<ScheduledId, UUID> mappingEntry = iter.next();
+        var uuid = scheduledIdMappingStore.delete(mappingEntry.key);
+        var value = scheduledRecordStore.delete(uuid);
         var key = value.metadata();
         context.forward(key, value);
-        scheduledRecordStore.delete(entry.key);
         // count++;
       }
       // forwardedRecordCounter.add(count);

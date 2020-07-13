@@ -36,8 +36,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class KSchedulerTopologyProducer {
 
-  public static final String SCHEDULED_RECORDS_STATE_STORE_NAME = "kscheduler-scheduled-records";
-  public static final String SCHEDULED_IDS_STATE_STORE_NAME = "kscheduler-scheduled-ids";
+  public static final String SCHEDULED_RECORD_STATE_STORE_NAME = "kscheduler-scheduled-records";
+  public static final String SCHEDULED_ID_MAPPING_STATE_STORE_NAME = "kscheduler-scheduled-id-mappings";
   public static final String TOPIC_SETTINGS_STATE_STORE_NAME = "kscheduler-topic-settings";
   private static final Serde<UUID> UUID_SERDE = Serdes.UUID();
   private static final Serde<ScheduledId> SCHEDULED_ID_SERDE = new ScheduledIdSerde();
@@ -68,19 +68,19 @@ public class KSchedulerTopologyProducer {
   public Topology getTopology() {
     var defaultTopicSettings = new TopicSettings(schedulingEnabled, ignoreTopicErrors);
     var scheduledRecordStoreBuilder = Stores.keyValueStoreBuilder(
-        Stores.persistentKeyValueStore(SCHEDULED_RECORDS_STATE_STORE_NAME),
-        SCHEDULED_ID_SERDE,
+        Stores.persistentKeyValueStore(SCHEDULED_RECORD_STATE_STORE_NAME),
+        UUID_SERDE,
         SCHEDULED_RECORD_SERDE)
       .withLoggingEnabled(Collections.emptyMap());
-    var scheduledIdStoreBuilder = Stores.keyValueStoreBuilder(
-        Stores.persistentKeyValueStore(SCHEDULED_IDS_STATE_STORE_NAME),
-        UUID_SERDE,
-        SCHEDULED_ID_SERDE)
+    var scheduledIdMappingStoreBuilder = Stores.keyValueStoreBuilder(
+        Stores.persistentKeyValueStore(SCHEDULED_ID_MAPPING_STATE_STORE_NAME),
+        SCHEDULED_ID_SERDE,
+        UUID_SERDE)
       .withLoggingEnabled(Collections.emptyMap());
     // topology
     var builder = new StreamsBuilder();
     builder.addStateStore(scheduledRecordStoreBuilder)
-        .addStateStore(scheduledIdStoreBuilder);
+        .addStateStore(scheduledIdMappingStoreBuilder);
     // create denylist ktable and materialize into a state store
     builder.globalTable(
         denylistTopic, 
@@ -94,11 +94,11 @@ public class KSchedulerTopologyProducer {
         .through(scheduledTopic, Produced.with(SCHEDULED_RECORD_METADATA_SERDE, SCHEDULED_RECORD_SERDE, new ScheduledRecordIdPartitioner()))
         .transform(
             () -> new SchedulerTransformer(
-                SCHEDULED_RECORDS_STATE_STORE_NAME, 
-                SCHEDULED_IDS_STATE_STORE_NAME,
+                SCHEDULED_RECORD_STATE_STORE_NAME, 
+                SCHEDULED_ID_MAPPING_STATE_STORE_NAME,
                 punctuateSchedule,
                 maximumDelay),
-            Named.as("SCHEDULER"), SCHEDULED_RECORDS_STATE_STORE_NAME, SCHEDULED_IDS_STATE_STORE_NAME)
+            Named.as("SCHEDULER"), SCHEDULED_RECORD_STATE_STORE_NAME, SCHEDULED_ID_MAPPING_STATE_STORE_NAME)
         .through(outgoingTopic, Produced.with(SCHEDULED_RECORD_METADATA_SERDE, SCHEDULED_RECORD_SERDE, new ScheduledRecordIdPartitioner()))
         .transform(
             () -> new ScheduledToDestinationTransformer(TOPIC_SETTINGS_STATE_STORE_NAME, defaultTopicSettings), 
