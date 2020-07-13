@@ -59,11 +59,14 @@ public class KSchedulerTopologyProducer {
   Duration punctuateSchedule;
   @ConfigProperty(name = "kscheduler.maximum.delay")
   Duration maximumDelay;
+  @ConfigProperty(name = "kscheduler.defaults.scheduling-enabled")
+  boolean schedulingEnabled;
+  @ConfigProperty(name = "kscheduler.defaults.ignore-topic-errors")
+  boolean ignoreTopicErrors;
 
   @Produces
   public Topology getTopology() {
-    var builder = new StreamsBuilder();
-    // State stores
+    var defaultTopicSettings = new TopicSettings(schedulingEnabled, ignoreTopicErrors);
     var scheduledRecordStoreBuilder = Stores.keyValueStoreBuilder(
         Stores.persistentKeyValueStore(SCHEDULED_RECORDS_STATE_STORE_NAME),
         SCHEDULED_ID_SERDE,
@@ -75,7 +78,7 @@ public class KSchedulerTopologyProducer {
         SCHEDULED_ID_SERDE)
       .withLoggingEnabled(Collections.emptyMap());
     // topology
-    // attach state stores
+    var builder = new StreamsBuilder();
     builder.addStateStore(scheduledRecordStoreBuilder)
         .addStateStore(scheduledIdStoreBuilder);
     // create denylist ktable and materialize into a state store
@@ -85,7 +88,9 @@ public class KSchedulerTopologyProducer {
         Materialized.as(TOPIC_SETTINGS_STATE_STORE_NAME));
     // create main app stream
     builder.stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
-        .transform(SourceToScheduledTransformer::new, Named.as("SOURCE_TO_SCHEDULED"))
+        .transform(
+            () -> new SourceToScheduledTransformer(TOPIC_SETTINGS_STATE_STORE_NAME, defaultTopicSettings), 
+            Named.as("SOURCE_TO_SCHEDULED"))
         .through(scheduledTopic, Produced.with(SCHEDULED_RECORD_METADATA_SERDE, SCHEDULED_RECORD_SERDE, new ScheduledRecordIdPartitioner()))
         .transform(
             () -> new SchedulerTransformer(
@@ -95,7 +100,9 @@ public class KSchedulerTopologyProducer {
                 maximumDelay),
             Named.as("SCHEDULER"), SCHEDULED_RECORDS_STATE_STORE_NAME, SCHEDULED_IDS_STATE_STORE_NAME)
         .through(outgoingTopic, Produced.with(SCHEDULED_RECORD_METADATA_SERDE, SCHEDULED_RECORD_SERDE, new ScheduledRecordIdPartitioner()))
-        .transform(() -> new ScheduledToDestinationTransformer(TOPIC_SETTINGS_STATE_STORE_NAME), Named.as("SCHEDULED_TO_SOURCE"))
+        .transform(
+            () -> new ScheduledToDestinationTransformer(TOPIC_SETTINGS_STATE_STORE_NAME, defaultTopicSettings), 
+            Named.as("SCHEDULED_TO_SOURCE"))
         .to(new ScheduledDestinationTopicNameExtractor(dlqTopic), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
     return builder.build();
   }

@@ -10,14 +10,14 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class AppLifecycle {
 
-    private static final Logger LOGGER = Logger.getLogger("ListenerBean");
+    private static final Logger LOGGER = Logger.getLogger("AppLifecycle");
 
     void onStart(@Observes StartupEvent ev) {               
-        LOGGER.info("The application is starting...");
+        LOGGER.info("KScheduler starting...");
     }
 
     void onStop(@Observes ShutdownEvent ev) {               
-        LOGGER.info("The application is stopping...");
+        LOGGER.info("KScheduler stopping...");
     }
 
 }

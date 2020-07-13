@@ -25,16 +25,15 @@ public class ScheduledToDestinationTransformer
 
   private String topicSettingsStateStoreName;
   private ReadOnlyKeyValueStore<String, TopicSettings> topicSettingsStore;
+  private TopicSettings defaultSettings;
   private ProcessorContext context;
 
-  public ScheduledToDestinationTransformer(String topicSettingsStateStoreName) {
+  public ScheduledToDestinationTransformer(String topicSettingsStateStoreName, TopicSettings defaultTopicSettings) {
     this.topicSettingsStateStoreName = topicSettingsStateStoreName;
+    this.defaultSettings = defaultTopicSettings;
   }
 
-  public ScheduledToDestinationTransformer() {
-    this(null);
-  }
-
+  @SuppressWarnings("unchecked")
   @Override
   public void init(ProcessorContext context) {
     this.context = context;
@@ -44,26 +43,29 @@ public class ScheduledToDestinationTransformer
   }
 
   /**
-   * Transforms records back into the pre-scheduled key and payload.
+   * Transforms records back into the original key and payload.
    */
   public KeyValue<Bytes, Bytes> transform(ScheduledRecordMetadata metadata, ScheduledRecord record) {
     if (context.headers() == null) {
       // if the headers are null then we are probably directly attached to a stateful processor
-      // Unfortunately streams doesnt have a way to set
+      // Unfortunately streams doesnt have a way to set headers on events that are generated from punctuations
       logger.warn("Dropping record: Unable to set destination header. Route events via topic first.");
     } else {
       record.headers().forEach(header -> context.headers().add(header));
       HeaderUtils.stripKschedulerHeaders(context.headers());
       var topic = metadata.destination();
-      if (schedulingIsDisabled(topic)) {
+      if (schedulingEnabled(topic)) {
+        context.headers().add(
+            HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, 
+            topic.getBytes(UTF_8));
+        context.headers().add(
+            HeaderUtils.KSCHEDULER_FORWARDED_AT_HEADER_KEY, 
+            Instant.ofEpochMilli(context.timestamp()).toString().getBytes(UTF_8));
+      } else {
         var errorMessage = "Scheduled record delivery is disabled for the topic: " + topic;
         context.headers().add(
             HeaderUtils.KSCHEDULER_ERROR_HEADER_KEY, 
             errorMessage.getBytes(UTF_8));
-      } else {
-        context.headers().add(
-          HeaderUtils.KSCHEDULER_DESTINATION_HEADER_KEY, 
-          topic.getBytes(UTF_8));
       }
       context.headers().add(
           HeaderUtils.KSCHEDULER_SCHEDULED_HEADER_KEY, 
@@ -77,9 +79,6 @@ public class ScheduledToDestinationTransformer
       context.headers().add(
           HeaderUtils.KSCHEDULER_ID_HEADER_KEY, 
           metadata.id().toString().getBytes(UTF_8));
-      context.headers().add(
-        HeaderUtils.KSCHEDULER_FORWARDED_AT_HEADER_KEY, 
-        Instant.ofEpochMilli(context.timestamp()).toString().getBytes(UTF_8));
       final var key = new Bytes(record.key());
       final var value = new Bytes(record.value());
       context.forward(key, value);
@@ -88,17 +87,20 @@ public class ScheduledToDestinationTransformer
   }
 
   public void close() {
+    topicSettingsStateStoreName = null;
     // noop
   }
 
-  private boolean schedulingIsDisabled(String topic) {
+  private boolean schedulingEnabled(String topic) {
     if (topicSettingsStore != null) {
       var settings = topicSettingsStore.get(topic);
       if (settings != null) {
-        return settings.getSchedulingDisabled();
+        // If this topic explicitly has scheduling enabled or disabled, use that setting
+        return settings.getSchedulingEnabled();
       }
     }
-    return false;
+    // If this topic does not explicitly have scheduling enabled or disabled, use the global setting
+    return defaultSettings.getSchedulingEnabled();
   }
 
 }

@@ -4,20 +4,25 @@ import java.util.Objects;
 
 public class TopicSettings {
   
-  private boolean schedulingDisabled = false;
-  private boolean ignoreMissingTopic = false;
+  private final boolean schedulingEnabled;
+  private final boolean ignoreTopicErrors;
 
-  public TopicSettings(Boolean schedulingDisabled, Boolean ignoreMissingTopic) {
-    this.schedulingDisabled = Objects.requireNonNullElse(schedulingDisabled, false);
-    this.ignoreMissingTopic = Objects.requireNonNullElse(ignoreMissingTopic, false);
+  public TopicSettings(Boolean schedulingEnabled, Boolean ignoreTopicErrors) {
+    this.schedulingEnabled = Objects.requireNonNullElse(schedulingEnabled, true);
+    this.ignoreTopicErrors = Objects.requireNonNullElse(ignoreTopicErrors, false);
   }
 
-  public boolean getSchedulingDisabled() {
-    return schedulingDisabled;
+  public TopicSettings() {
+    this(null, null);
   }
 
-  public boolean getIgnoreMissingTopic() {
-    return ignoreMissingTopic;
+  public boolean getSchedulingEnabled() {
+    return schedulingEnabled;
   }
+
+  public boolean getIgnoreTopicErrors() {
+    return ignoreTopicErrors;
+  }
+
   
 }

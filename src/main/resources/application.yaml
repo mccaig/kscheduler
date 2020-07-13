@@ -5,6 +5,15 @@ kscheduler:
     delay: P7D
   punctuate:
     schedule: PT1S
+  defaults:
+    scheduling-enabled: true
+    ignore-topic-errors: false
+  topics:
+    input: kscheduler.input
+    scheduled: kscheduler.scheduled
+    outgoing: kscheduler.outgoing
+    dlq: kscheduler.dlq
+    topic-settings: kscheduler.topic-settings
   kafka:
     application:
       id: kscheduler
@@ -20,12 +29,7 @@ kscheduler:
       max:
         idle:
           ms: 3600000 # If we havent produced to a topic in an hour, stop refreshing its metadata into cache
-  topics:
-    input: kscheduler.input
-    scheduled: kscheduler.scheduled
-    outgoing: kscheduler.outgoing
-    dlq: kscheduler.dlq
-    topic-settings: kscheduler.topic-settings
+
 quarkus:
   http:
     root-path: /
