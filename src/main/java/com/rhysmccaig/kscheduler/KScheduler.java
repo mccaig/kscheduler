@@ -15,6 +15,7 @@ import com.rhysmccaig.kscheduler.util.ConfigUtils;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import java.time.Duration;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import org.apache.kafka.common.errors.InterruptException;
@@ -34,9 +35,14 @@ import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class KScheduler {
-  static final Logger logger = LogManager.getLogger(KScheduler.class);
+import io.opentelemetry.exporter.logging.LoggingMetricExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.IntervalMetricReader;
 
+
+public class KScheduler {
+  private static final Logger logger = LogManager.getLogger(KScheduler.class);
   private static Serde<ScheduledRecordMetadata> METADATA_SERDE = new ScheduledRecordMetadataSerde();
   private static Serde<ScheduledRecord> RECORD_SERDE = new ScheduledRecordSerde();
 
@@ -45,6 +51,13 @@ public class KScheduler {
    * @param args ignored
    */
   public static void main(String[] args) {
+    var openTelemetry = OpenTelemetrySdk.builder().build();
+    var meterProvider = SdkMeterProvider.builder().build();
+    IntervalMetricReader.builder()
+      .setMetricProducers(List.of(meterProvider.getMetricProducer()))
+      .setMetricExporter(new LoggingMetricExporter())
+      .setExportIntervalMillis(Duration.ofSeconds(5).toMillis());
+
     final Config config = ConfigFactory.load();
     final Config schedulerConfig = config.getConfig("scheduler");
     final Config topicsConfig = config.getConfig("topics");

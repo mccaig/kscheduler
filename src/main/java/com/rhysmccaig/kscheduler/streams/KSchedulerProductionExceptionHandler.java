@@ -35,7 +35,5 @@ public class KSchedulerProductionExceptionHandler implements ProductionException
       return ProductionExceptionHandlerResponse.FAIL;
     }
   }
-  
-
 
 }

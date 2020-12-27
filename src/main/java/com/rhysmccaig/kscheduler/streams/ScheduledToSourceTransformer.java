@@ -27,6 +27,7 @@ public class ScheduledToSourceTransformer
   /**
    * Transforms records back into the pre-scheduled key and payload.
    */
+  @Override
   public KeyValue<Bytes, Bytes> transform(ScheduledRecordMetadata key, ScheduledRecord value) {
     if (context.headers() == null) {
       // if the headers are null then we are probably directly attached to a stateful processor
@@ -43,6 +44,7 @@ public class ScheduledToSourceTransformer
     return null;
   }
 
+  @Override
   public void close() {
     // noop
   }

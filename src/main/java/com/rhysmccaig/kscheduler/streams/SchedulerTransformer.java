@@ -5,10 +5,13 @@ import com.rhysmccaig.kscheduler.model.ScheduledRecord;
 import com.rhysmccaig.kscheduler.model.ScheduledRecordMetadata;
 import com.rhysmccaig.kscheduler.serialization.ScheduledIdSerde;
 import com.rhysmccaig.kscheduler.serialization.ScheduledRecordSerde;
-import io.opentelemetry.OpenTelemetry;
-import io.opentelemetry.metrics.LongCounter;
-import io.opentelemetry.metrics.LongCounter.BoundLongCounter;
-import io.opentelemetry.metrics.Meter;
+
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.Labels;
+import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongCounter.BoundLongCounter;
+import io.opentelemetry.api.metrics.Meter;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -34,16 +37,14 @@ import org.apache.logging.log4j.Logger;
 
 public class SchedulerTransformer implements 
     Transformer<ScheduledRecordMetadata, ScheduledRecord, KeyValue<ScheduledRecordMetadata, ScheduledRecord>> {
-  static final Logger logger = LogManager.getLogger(SchedulerTransformer.class); 
-
+  static final Logger logger = LogManager.getLogger(SchedulerTransformer.class);
+  private static final Meter meter = OpenTelemetry.getGlobalMeter("com.rhysmccaig.kscheduler.streams.KSchedulerTransformer");
   // How often we scan the records database for records that are ready to be forwarded.
   public static final Duration DEFAULT_PUNCTUATE_INTERVAL = Duration.ofSeconds(1);
   public static final Duration DEFAULT_MAXIMUM_DELAY = Duration.ofDays(7);
   public static final String DEFAULT_SCHEDULED_RECORDS_STATE_STORE_NAME = "kscheduler-scheduled-records";
   public static final String DEFAULT_SCHEDULED_IDS_STATE_STORE_NAME = "kscheduler-scheduled-ids";
   public static final String PROCESSOR_NAME = "kscheduler-processor";
-
-  private final Meter meter = OpenTelemetry.getMeter("io.opentelemetry.example.metrics", "0.5");
 
   private static final Serde<UUID> UUID_SERDE = Serdes.UUID();
   private static final Serde<ScheduledId> SCHEDULED_ID_SERDE = new ScheduledIdSerde();
@@ -82,11 +83,10 @@ public class SchedulerTransformer implements
         .setDescription("Processed Records")
         .setUnit("Record")
         .build();  
-    var transformCounterKey = "transform()";
-    transformValidCounter = recordCounter.bind(transformCounterKey, "Valid");
-    transformInvalidCounter = recordCounter.bind(transformCounterKey, "Invalid");
-    scheduledRecordCounter = recordCounter.bind(transformCounterKey, "Scheduled");
-    forwardedRecordCounter = recordCounter.bind("punctuate()", "Forward");
+    transformValidCounter = recordCounter.bind(Labels.of("transform()", "Valid"));
+    transformInvalidCounter = recordCounter.bind(Labels.of("transform()", "Invalid"));
+    scheduledRecordCounter = recordCounter.bind(Labels.of("transform()", "Scheduled"));
+    forwardedRecordCounter = recordCounter.bind(Labels.of("punctuate()", "Forward"));
   }
 
   public SchedulerTransformer() {
@@ -147,7 +147,7 @@ public class SchedulerTransformer implements
     scheduledIdStore = null;
     punctuateSchedule = null;
     recordCounter = null;
-    transformValidCounter = transformInvalidCounter  = scheduledRecordCounter = forwardedRecordCounter = null;
+    transformValidCounter = transformInvalidCounter = scheduledRecordCounter = forwardedRecordCounter = null;
   }
 
   public static StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> getScheduledRecordStoreBuilder() {
