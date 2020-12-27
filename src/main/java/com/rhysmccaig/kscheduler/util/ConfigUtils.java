@@ -5,10 +5,6 @@ import java.util.Properties;
 
 // Convert lightbend config into java properties
 public class ConfigUtils {
-
-  private ConfigUtils() {
-    // noop
-  }
   
   /**
    * Convert config object into java properties.

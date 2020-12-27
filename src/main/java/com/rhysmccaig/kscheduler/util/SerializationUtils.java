@@ -6,8 +6,6 @@ import java.util.UUID;
 
 public class SerializationUtils {
 
-  private SerializationUtils() {}
-
   /**
    * Returns a byte array representing a long value.
    * the most significant bit is flipped so that the resulting
@@ -44,7 +42,7 @@ public class SerializationUtils {
     };
   }
 
-    /**
+  /**
    * Returns a byte array representing an UUID value.
    * the most significant bits first so that
    * byte array will sort lexicographically

@@ -28,6 +28,7 @@ import org.apache.kafka.streams.errors.LogAndContinueExceptionHandler;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.Repartitioned;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.StoreBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -58,11 +59,12 @@ public class KScheduler {
     streamsProps.put(StreamsConfig.DEFAULT_PRODUCTION_EXCEPTION_HANDLER_CLASS_CONFIG,
         KSchedulerProductionExceptionHandler.class);
 
-    final Topology topology = getTopology(topicsConfig.getString("input"), topicsConfig.getString("scheduled"),
-        topicsConfig.getString("outgoing"),
+    final Topology topology = getTopology(
+        topicsConfig.getString("input"), 
         SchedulerTransformer.getScheduledRecordStoreBuilder(),
         SchedulerTransformer.getScheduledIdStoreBuilder(),
-        schedulerConfig.getDuration("punctuate.interval"), schedulerConfig.getDuration("maximum.delay"));
+        schedulerConfig.getDuration("punctuate.interval"), 
+        schedulerConfig.getDuration("maximum.delay"));
 
     logger.debug("streams topology: {}", topology.describe());
     KafkaStreams streams = new KafkaStreams(topology, streamsProps);
@@ -79,7 +81,6 @@ public class KScheduler {
       }
     }));
     streams.start();
-
   }
 
 
@@ -95,21 +96,26 @@ public class KScheduler {
    * @param maximumDelay the maximum amount of time a record may be scheduled in the future
    * @return
    */
-  public static Topology getTopology(String inputTopic, String scheduledTopic, String outgoingTopic,
+  public static Topology getTopology(
+      String inputTopic,
       StoreBuilder<KeyValueStore<ScheduledId, ScheduledRecord>> scheduledRecordStoreBuilder,
       StoreBuilder<KeyValueStore<UUID, ScheduledId>> scheduledIdStoreBuilder, 
       Duration punctuateSchedule,
       Duration maximumDelay) {
+    var repartitionConfig = Repartitioned
+        .with(METADATA_SERDE, RECORD_SERDE)
+        .withStreamPartitioner(new ScheduledRecordIdPartitioner());
     var builder = new StreamsBuilder();
-    builder.addStateStore(scheduledRecordStoreBuilder).addStateStore(scheduledIdStoreBuilder)
+    builder.addStateStore(scheduledRecordStoreBuilder)
+        .addStateStore(scheduledIdStoreBuilder)
         .stream(inputTopic, Consumed.with(Serdes.Bytes(), Serdes.Bytes()))
         .transform(SourceToScheduledTransformer::new, Named.as("SOURCE_TO_SCHEDULED"))
-        .through(scheduledTopic, Produced.with(METADATA_SERDE, RECORD_SERDE, new ScheduledRecordIdPartitioner()))
+        .repartition(repartitionConfig)
         .transform(
             () -> new SchedulerTransformer(scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name(),
                 punctuateSchedule, maximumDelay),
             Named.as("SCHEDULER"), scheduledRecordStoreBuilder.name(), scheduledIdStoreBuilder.name())
-        .through(outgoingTopic, Produced.with(METADATA_SERDE, RECORD_SERDE, new ScheduledRecordIdPartitioner()))
+        .repartition(repartitionConfig) // Only needed to set headers, may be able to remove this if headers can be set in processor
         .transform(ScheduledToSourceTransformer::new, Named.as("SCHEDULED_TO_SOURCE"))
         .to(new ScheduledDestinationTopicNameExtractor(), Produced.with(Serdes.Bytes(), Serdes.Bytes()));
     return builder.build();
